@@ -418,3 +418,53 @@ load after the redesign failed on a shape mismatch. One adapter in lib/data.ts n
 normalises both the row-form fixture and the columnar slice, and the views are unchanged.
 The prototype is currently rendering real pipeline output, not fixtures, and the fixture
 badge correctly does not appear.
+
+---
+
+# Phase 3 (in progress) — the graph level
+
+## D-025 — Graph features, causal and windowed
+
+Nine features in `adl/defend/graph_features.py`: fan-in and fan-out over 24 hours, degree
+ratio, pass-through score, residence time, short-cycle membership, shared-device degree,
+counterparty age, beneficiary novelty.
+
+Every one is strictly backward looking. Each transaction sees only the subgraph that
+existed before it, because a statistic computed over the whole graph lets a transaction
+on day three see money that moved on day ninety. That is the graph version of exactly the
+leak the time split exists to prevent, and it would be invisible in the split assertions.
+
+Single-feature AUC on a 40k smoke run: residence time 0.870 where defined, degree ratio
+0.625, pass-through 0.624, cycle membership 0.557.
+
+## Result: what the graph level contributes
+
+250k transactions, 20k accounts, test prevalence 1.132%.
+
+| Variant | Precision | Recall | AUC-PR | Lift over baseline |
+|---|---|---|---|---|
+| baseline (LR, transaction only) | 0.079 | 0.847 | 0.113 | — |
+| transaction only | 0.759 | 0.897 | 0.915 | +709% |
+| transaction + session | 0.866 | 0.909 | 0.956 | +745% |
+| **all three levels** | **0.826** | **1.000** | **0.994** | **+778%** |
+| all levels minus graph | 0.866 | 0.909 | 0.956 | +745% |
+| all levels minus coercion signal | 0.801 | 1.000 | 0.993 | +778% |
+| all levels minus cadence signal | 0.766 | 1.000 | 0.995 | +780% |
+
+**The graph level contributes +0.038 AUC-PR and +9 points of recall** over transaction and
+session evidence combined. That is the number that answers the brief's first requirement,
+and it is isolated rather than asserted: `all_levels_minus_graph` reproduces the
+`txn+session` row exactly, which is the check that the ablation is doing what it says.
+
+Precision falls slightly when the graph level is added, because it catches more at a
+lower threshold. Net value protected rises 16%, which is the trade the operator actually
+cares about.
+
+## Still not publishable
+
+Instance recall is now 100% over 37 instances. Perfect detection on thirty-seven
+incidents is not a result, it is a sample size. Nothing changes until the full-scale run
+and held-out families, which are the next two items.
+
+The coercion signal still contributes nothing measurable. Removing it costs 0.001 AUC-PR.
+The cadence signal is the same. Both are starved of support at this scale.
