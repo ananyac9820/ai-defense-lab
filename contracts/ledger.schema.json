@@ -9,7 +9,7 @@
   "properties": {
     "contract_version": { "const": "0.1.0" },
     "label_columns": {
-      "const": ["is_fraud", "vector_id", "chain_position", "generation", "label_is_mule", "label_is_synthetic_identity"],
+      "const": ["is_fraud", "vector_id", "instance_id", "chain_position", "generation", "label_is_mule", "label_is_synthetic_identity"],
       "description": "Ground truth. Never permitted in a feature matrix. Asserted by tests/test_no_label_leakage.py."
     },
     "provenance_forbidden_columns": {
@@ -73,7 +73,7 @@
       "required": [
         "transaction_id", "account_id", "device_id", "merchant_id", "session_id",
         "timestamp", "amount_inr", "channel", "geography", "mcc", "auth_result",
-        "is_fraud", "vector_id", "chain_position", "generation"
+        "is_fraud", "vector_id", "instance_id", "chain_position", "generation"
       ],
       "additionalProperties": false,
       "properties": {
@@ -90,6 +90,11 @@
         "auth_result": { "enum": ["approved", "declined", "pending"] },
         "is_fraud": { "type": "boolean" },
         "vector_id": { "type": ["string", "null"], "pattern": "^V[0-9]{3}$" },
+        "instance_id": {
+          "type": ["string", "null"],
+          "pattern": "^I[0-9]{6}$",
+          "description": "One execution of a chain. Added 2026-08-20 after the first end-to-end run: misses.json already referenced an instance_id the ledger could not identify, and row-weighted metrics let a single high-volume vector dominate. Detection is reported per instance as well as per row."
+        },
         "chain_position": { "type": ["integer", "null"], "minimum": 0 },
         "generation": { "type": ["integer", "null"], "minimum": 0 }
       }
@@ -98,7 +103,8 @@
       "type": "object",
       "required": [
         "session_id", "account_id", "device_id", "started_at", "channel",
-        "events", "outcome", "is_fraud", "vector_id", "chain_position", "generation"
+        "events", "outcome", "is_fraud", "vector_id", "instance_id", "chain_position",
+        "generation"
       ],
       "additionalProperties": false,
       "properties": {
@@ -111,6 +117,7 @@
         "outcome": { "enum": ["completed", "abandoned", "blocked", "stepped_up"] },
         "is_fraud": { "type": "boolean" },
         "vector_id": { "type": ["string", "null"], "pattern": "^V[0-9]{3}$" },
+        "instance_id": { "type": ["string", "null"], "pattern": "^I[0-9]{6}$" },
         "chain_position": { "type": ["integer", "null"], "minimum": 0 },
         "generation": { "type": ["integer", "null"], "minimum": 0 }
       }

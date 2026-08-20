@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Empty, GlassPanel, Metric } from '../components/ui';
+import { Empty, GlassPanel, Metric, PlaceholderBadge } from '../components/ui';
 import { formatInr, lift, pct } from '../lib/data';
 import { useStore } from '../lib/store';
 import { axisProps, tooltipProps } from './chartTheme';
@@ -31,6 +31,10 @@ export default function DetectionSurface() {
   const { bundle, perspective, threshold, setThreshold, generation } = useStore();
   const attacker = perspective === 'attacker';
 
+  // P-01 in PLACEHOLDERS.md. The sweep is extrapolated from one measured operating point
+  // by a monotone family - the trade-off it encodes is real arithmetic, the curve shape is
+  // not measured. Badged on the chart itself, because a page-level badge is exactly what
+  // a judge stops noticing after thirty seconds.
   const curve = useMemo(() => {
     if (!bundle) return [];
     const gen =
@@ -97,6 +101,14 @@ export default function DetectionSurface() {
             hint="determines review staffing"
           />
           <Metric label="Net value protected" value={at.net} currency hint={`optimum at ${optimum.threshold}`} />
+        </div>
+
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <span className="label-caps">threshold sweep</span>
+          <PlaceholderBadge
+            id="P-01"
+            what="curve extrapolated from one operating point; real sweep lands in Phase 3"
+          />
         </div>
 
         <div className="mb-4 flex items-center gap-4">

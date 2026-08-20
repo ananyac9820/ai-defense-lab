@@ -53,10 +53,12 @@ baseline:
     - log_amount
     - hour_of_day
     - day_of_week
-    - channel
-    - mcc
-    - auth_result
+    - channel_code
+    - mcc_code
+    - auth_declined
     - geography_matches_home
+    - account_age_days
+    - device_age_days
 
 cost_model:
   review_cost_inr: 250       # NOTES.md D-010

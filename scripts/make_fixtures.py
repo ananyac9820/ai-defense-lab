@@ -352,11 +352,18 @@ def build_ledger() -> dict:
     n_fraud = int(N_TXNS * PREVALENCE)
     fraud_indices = set(rng.choice(N_TXNS, size=n_fraud, replace=False).tolist())
     vector_ids = [v["vector_id"] for v in VECTORS_GEN0]
+    # Roughly three rows per attack instance, matching what the simulator produces. The
+    # UI scores detection per instance, so the fixture has to carry instances too.
+    fraud_seen = 0
 
     transactions, sessions, edges = [], [], []
     for i in range(N_TXNS):
         is_fraud = i in fraud_indices
         vid = vector_ids[int(rng.integers(0, len(vector_ids)))] if is_fraud else None
+        iid = None
+        if is_fraud:
+            iid = f"I{fraud_seen // 3:06d}"
+            fraud_seen += 1
         acct = accounts[int(rng.integers(0, N_ACCOUNTS))]
         dev = devices[int(rng.integers(0, N_DEVICES))]
         mer = merchants[int(rng.integers(0, N_MERCHANTS))]
@@ -393,6 +400,7 @@ def build_ledger() -> dict:
             else "approved",
             "is_fraud": is_fraud,
             "vector_id": vid,
+            "instance_id": iid,
             "chain_position": int(rng.integers(0, 4)) if is_fraud else None,
             "generation": 0 if is_fraud else None,
         })
@@ -409,6 +417,7 @@ def build_ledger() -> dict:
                 else "blocked",
                 "is_fraud": is_fraud,
                 "vector_id": vid,
+                "instance_id": iid,
                 "chain_position": transactions[-1]["chain_position"],
                 "generation": transactions[-1]["generation"],
             })
@@ -448,8 +457,8 @@ def build_ledger() -> dict:
 
     return {
         "contract_version": "0.1.0",
-        "label_columns": ["is_fraud", "vector_id", "chain_position", "generation",
-                          "label_is_mule", "label_is_synthetic_identity"],
+        "label_columns": ["is_fraud", "vector_id", "instance_id", "chain_position",
+                          "generation", "label_is_mule", "label_is_synthetic_identity"],
         "provenance_forbidden_columns": ["row_source", "generator_version"],
         "tables": {
             "accounts": accounts, "devices": devices, "merchants": merchants,
