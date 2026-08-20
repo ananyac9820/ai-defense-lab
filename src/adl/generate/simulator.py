@@ -828,7 +828,11 @@ def _attack_v005(world: World, params: dict[str, Any]) -> None:
         em.edge(ts=t, source=mule, target=sink, amount=amount, edge_type="transfer")
 
 
-ATTACKS = {
+# The five hand-authored attack functions above are retained as reference
+# implementations of what a chain produces end to end, but nothing dispatches on them any
+# more: adl.generate.primitives.execute_chain runs chains primitive by primitive, which is
+# what lets the red-team strategist propose vectors that actually execute.
+_REFERENCE_IMPLEMENTATIONS = {
     "V001": _attack_v001,
     "V002": _attack_v002,
     "V003": _attack_v003,
@@ -983,7 +987,16 @@ def simulate(
     # Volume is set from the target prevalence. Each instance emits a variable number of
     # rows, so the loop measures rather than assumes.
     target_fraud = int(n_transactions * prevalence)
-    vector_cycle = [v for v in vectors if v["vector_id"] in ATTACKS]
+    # Runnable means every primitive in the chain is implemented, not that the vector id
+    # is in some registry. The registry filter survived the move to chain execution and
+    # silently dropped three newly authored vectors: they were counted in the taxonomy,
+    # validated against the contract, and emitted nothing at all.
+    from .primitives import PRIMITIVES
+
+    vector_cycle = [v for v in vectors if all(p in PRIMITIVES for p in v["chain"])]
+    skipped = [v["vector_id"] for v in vectors if v not in vector_cycle]
+    if skipped:
+        print(f"  WARNING: skipping vectors with unimplemented primitives: {skipped}")
     if not vector_cycle:
         raise ValueError("no implemented vectors among the supplied attacks.json")
 

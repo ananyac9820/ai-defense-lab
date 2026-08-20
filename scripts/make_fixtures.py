@@ -224,6 +224,110 @@ VECTORS_GEN0 = [
         "mutation_mode": None,
         "narrative": None,
     },
+    {
+        "vector_id": "V006",
+        "name": "Fraudulent merchant onboarding into collusion payout",
+        "channel": "merchant_payouts",
+        "ai_capability": "document_forgery",
+        "objective": "laundering_layering",
+        "chain": ["synthesise_identity", "open_mule_account", "merchant_collusion_payout"],
+        "data_signature": (
+            "Value leaves through an acquiring account rather than a transfer. Concentrated "
+            "volume from few payers into a merchant onboarded weeks ago, with a category mix "
+            "that does not match its stated business. The extraction never touches a "
+            "peer-to-peer rail, so nothing about it resembles the money movement the detector "
+            "has learned."
+        ),
+        "parameters": {
+            "merchant_age_days": [7, 120],
+            "payout_multiple": [1.5, 12.0],
+            "n_payouts": [2, 7],
+        },
+        "source": {
+            "case": "AI-generated fake business documents and fabricated transaction histories are used to pass merchant underwriting, after which the account processes stolen card charges and pays out to the fraudster.",
+            "stat": None,
+            "citation_url": "https://www.mastercard.com/us/en/news-and-trends/stories/2026/recorded-future-annual-payment-fraud-report.html",
+            "doc_ref": "33_AI_Era_Frauds #31 (fraudulent merchant onboarding)",
+            "regulator_advisory": None,
+        },
+        "expected_levels": ["graph", "transaction"],
+        # HELD OUT, and unlike V004 this one withholds the extraction itself.
+        # merchant_collusion_payout appears in no trained chain, so the money-movement
+        # footprint the detector actually learned is absent. This is the test that probes
+        # the boundary rather than the one that confirms what we already knew.
+        "holdout": "family",
+        "generation": 0,
+        "parent_vector_id": None,
+        "mutation_mode": None,
+        "narrative": None,
+    },
+    {
+        "vector_id": "V007",
+        "name": "Hijacked shopping agent purchasing on a forged intent proof",
+        "channel": "agentic_commerce",
+        "ai_capability": "agent_impersonation",
+        "objective": "intent_forgery",
+        "chain": ["compromise_agent", "provision_token", "agentic_purchase"],
+        "data_signature": (
+            "An authorisation carrying an agent identifier with no human interaction event "
+            "anywhere in the session. Event cadence is machine-regular, there is no dwell "
+            "before confirmation because nothing was confirmed by a person, and the purchase "
+            "settles against a merchant the account has no history with."
+        ),
+        "parameters": {
+            "agent_actions": [3, 9],
+            "purchase_multiple": [1.2, 8.0],
+            "inter_action_ms": [400, 1600],
+        },
+        "source": {
+            "case": "As AI shopping agents begin transacting on users' behalf, fraudsters target the agent's authorisation flow itself, tricking an agent into approving a fraudulent payee or replaying a forged proof of human intent. Mastercard's public posture through 2026 centres on agent-payment infrastructure and proving a human authorised an agent's purchase.",
+            "stat": None,
+            "citation_url": "https://www.bny.com/corporate/global/en/insights/ai-and-payments-fraud-an-evolving-landscape.html",
+            "doc_ref": "33_AI_Era_Frauds #33 (agentic AI commerce fraud); Strategy PDF S4.1",
+            "regulator_advisory": None,
+        },
+        "expected_levels": ["session", "transaction"],
+        # Also held out, also with an unseen extraction primitive.
+        "holdout": "family",
+        "generation": 0,
+        "parent_vector_id": None,
+        "mutation_mode": None,
+        "narrative": None,
+    },
+    {
+        "vector_id": "V008",
+        "name": "Phished credential into structured cash-out",
+        "channel": "upi_instant",
+        "ai_capability": "llm_text_generation",
+        "objective": "laundering_layering",
+        "chain": ["phish_credential", "open_mule_account", "micro_test", "structured_withdrawal"],
+        "data_signature": (
+            "Every primitive here appears somewhere in the training set. None of them appear "
+            "in this order. A phished credential feeding a structured cash-out is the "
+            "recombination the grammar makes cheap and that a fixed test set never contains."
+        ),
+        "parameters": {
+            "threshold_inr": 50000,
+            "under_threshold_margin_inr": [400, 4200],
+            "n_withdrawals": [4, 14],
+            "micro_test_amount_inr": [1, 120],
+        },
+        "source": {
+            "case": "AI-written phishing harvests the credential; the proceeds are then broken into transfers sized below the reporting threshold. Both halves are documented separately and the combination is what the grammar generates.",
+            "stat": None,
+            "citation_url": "https://www.mastercard.com/global/en/news-and-trends/Insights/2025/sharpening-card-fraud-defenses-in-the-age-of-risk.html",
+            "doc_ref": "33_AI_Era_Frauds #7 (spear-phishing), #28 (structuring)",
+            "regulator_advisory": None,
+        },
+        "expected_levels": ["session", "graph"],
+        # PDF S6.3's second requirement: seen primitives in an unseen order. Weaker than a
+        # novel extraction, but it is the test the document explicitly asks for.
+        "holdout": "composition",
+        "generation": 0,
+        "parent_vector_id": None,
+        "mutation_mode": None,
+        "narrative": None,
+    },
 ]
 
 

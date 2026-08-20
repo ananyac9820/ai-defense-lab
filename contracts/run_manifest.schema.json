@@ -75,7 +75,11 @@
         "n_transactions": { "type": "integer", "minimum": 0 },
         "n_fraud": { "type": "integer", "minimum": 0 },
         "metrics_seen": { "$ref": "#/$defs/metrics" },
-        "metrics_unseen": { "$ref": "#/$defs/metrics", "description": "Held-out families and unseen compositions. S6.4: never merged with seen." },
+        "metrics_unseen": { "$ref": "#/$defs/metrics", "description": "Held-out attack families. S6.4: never merged with seen." },
+        "metrics_unseen_composition": {
+          "$ref": "#/$defs/metrics",
+          "description": "Seen primitives in an unseen order, held out separately from whole families. S6.3 asks for both and they measure different things: a novel composition tests recombination, a novel family tests whether the money-movement footprint itself was ever learned."
+        },
         "ablation": {
           "type": "array",
           "description": "Per-level and per-signal contribution. S6.1 requires the lift each level contributes; D-004 requires the behavioural signal's contribution to be a stated number.",
