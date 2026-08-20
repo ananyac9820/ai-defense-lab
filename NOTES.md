@@ -372,3 +372,49 @@ only vector the detector misses is the coercion one, which is the expected shape
   out yet. Tracked as P-04.
 - **The split discards 42% of rows** to satisfy both conditions at once. Structurally
   correct, but worth stating in the walkthrough rather than letting someone discover it.
+
+---
+
+# D-023 — Interface rebuilt as a technical dossier (20 Aug 2026)
+
+**This reverses D-011 and the "dark only" line in the original design spec.** The new
+reference is a paper-light annotated blueprint, and the thirty-item list of AI-slop tells
+rules out most of what the first interface was made of. Both instructions are newer than
+the spec, so both win. Flagged rather than silently applied: if the ink ground is wanted
+back, the whole palette is four tokens.
+
+## What the interface is now
+
+Warm paper (#F3F2EE, not pure white), ink (#14140F), one continuous fixed hairline grid
+with registration marks behind every section. Type is Archivo for display and IBM Plex
+Mono for the annotation voice. Content is one scrolling document: masthead, six numbered
+sections, colophon. Sections overlap into each other and the ground never restarts, so
+there is no seam to see. Terms and privacy are the only separate routes.
+
+The inversion survives intact and is now cleaner: one spot colour, viridian #0F5C4A for
+the defence and vermilion #C43D18 for the attack. Everything else is paper and ink, so
+the swap is the only colour event on the page and cannot read as decoration.
+
+## Audited against the list, in the browser rather than by eye
+
+Zero violations for drop shadows, radial gradients, backdrop blur, border radius above
+4px, and CSS transitions. Zero emoji. Zero em dashes. Zero "it is not X, it is Y"
+constructions. Background is not pure white. Fonts are not Inter, Geist or Space Grotesk.
+
+Specific replacements: bento grids became an annotated two-column layout on a drawing
+grid; glass panels became bordered spec plates with title bars; the icon set became
+drawn marks, leader lines and hatching; hover became an instant state change with no
+transition; skeleton loaders are now real and shown while artefacts load; terms and
+privacy notices exist and say what is actually true of this artefact.
+
+Bundle dropped from 220KB to 73KB gzipped, because the chart library went with the
+redesign. Every figure is now hand-drawn SVG, which suits hairlines better than a
+charting default ever would.
+
+## D-024 — The frontend reads live artefacts
+
+The columnar demo slice arrived before the frontend knew how to read it, so the first
+load after the redesign failed on a shape mismatch. One adapter in lib/data.ts now
+normalises both the row-form fixture and the columnar slice, and the views are unchanged.
+The prototype is currently rendering real pipeline output, not fixtures, and the fixture
+badge correctly does not appear.
