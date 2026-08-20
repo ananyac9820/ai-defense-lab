@@ -485,6 +485,24 @@ class World:
     slow: bool = False
     restraint: float = 1.0
     declined: bool = False
+    generation: int = 0
+    synthetic_pool: list[str] = field(default_factory=list)
+    geos: list[str] = field(default_factory=lambda: list(GEOS))
+
+    def agent_device(self) -> str:
+        """A device that presents as an automation client rather than a handset."""
+        return self._agent_devices[
+            int(self.rng.integers(0, len(self._agent_devices)))
+        ] if self._agent_devices else self.foreign_device()
+
+    def young_merchant(self) -> dict[str, str]:
+        """A recently onboarded merchant, which is where collusion payouts land."""
+        return self._young_merchants[
+            int(self.rng.integers(0, len(self._young_merchants)))
+        ] if self._young_merchants else self.merchant()
+
+    _agent_devices: list[str] = field(default_factory=list)
+    _young_merchants: list[dict[str, str]] = field(default_factory=list)
 
     def new_instance(self) -> str:
         """Start an instance and draw the execution profile it will be run with.
@@ -952,6 +970,15 @@ def simulate(
     for record in world._all_merchants:
         world._merchant_index.setdefault(record["mcc"], []).append(record)
 
+    world.synthetic_pool = list(synth_set)
+    world._agent_devices = devices.loc[devices["os_family"] == "agent", "device_id"].tolist()
+    young_cutoff = start - timedelta(days=120)
+    world._young_merchants = [
+        {"merchant_id": m, "mcc": c}
+        for m, c, o in zip(merchants["merchant_id"], merchants["mcc"], merchants["onboarded_at"])
+        if o >= young_cutoff
+    ]
+
     # --- attack layer, run first so the fraud lands across the whole window ------
     # Volume is set from the target prevalence. Each instance emits a variable number of
     # rows, so the loop measures rather than assumes.
@@ -960,12 +987,19 @@ def simulate(
     if not vector_cycle:
         raise ValueError("no implemented vectors among the supplied attacks.json")
 
+    # Chains execute primitive by primitive (adl.generate.primitives). Before this, the
+    # attack layer was five hardcoded functions keyed by vector_id, which meant the
+    # red-team strategist could propose new chains that nothing could run - the loop
+    # would have been decoration. Any grammar-valid chain is now executable.
+    from .primitives import execute_chain
+
     instances = 0
-    while len(em._txns) < target_fraud:
+    guard = 0
+    while len(em._txns) < target_fraud and guard < target_fraud * 4 + 1000:
         vector = vector_cycle[instances % len(vector_cycle)]
-        params = {k: _sample_param(rng, v) for k, v in vector["parameters"].items()}
-        ATTACKS[vector["vector_id"]](world, params)
+        execute_chain(world, vector)
         instances += 1
+        guard += 1
     n_fraud_rows = len(em._txns)
 
     # --- behaviour layer ---------------------------------------------------

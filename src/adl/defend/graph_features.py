@@ -173,29 +173,58 @@ def account_graph_state(edges: pd.DataFrame, window_hours: int = 24) -> pd.DataF
     })
 
 
-def short_cycle_membership(edges: pd.DataFrame, max_length: int = 4) -> set[str]:
-    """Accounts sitting on a cycle of at most ``max_length`` transfer hops.
+def short_cycle_membership(
+    edges: pd.DataFrame, max_length: int = 4, max_nnz: int = 40_000_000
+) -> set[str]:
+    """Accounts sitting on a short closed loop in the transfer graph.
 
-    Layering closes a loop: value leaves an account, travels through a handful of others,
-    and comes back. Short cycles are the cheapest topological expression of that, and
-    unlike a full community detection pass they are computable in one sweep.
+    Layering closes a loop: value leaves an account, moves through a handful of others,
+    and comes back. That is the topological signature worth a feature.
+
+    Computed from powers of the sparse adjacency matrix rather than by enumerating
+    cycles. ``networkx.simple_cycles`` took 9 seconds on twelve thousand edges and did not
+    finish at all on the 384k edges a two-million-row ledger produces, because cycle
+    enumeration is exponential in the worst case and the transfer graph is exactly the
+    dense-in-places shape that triggers it. The diagonal of A^k counts closed walks of
+    length k through each node, and three sparse multiplies give the same membership
+    answer in well under a second.
+
+    The difference between a closed walk and a simple cycle is that a walk may revisit a
+    node. At lengths two to four on a sparse financial graph that distinction almost never
+    bites, and where it does the account is on a tight loop either way, which is what the
+    feature is for. Stated here rather than left as a silent approximation.
     """
-    import networkx as nx
+    from scipy import sparse
 
     transfers = edges[edges["edge_type"] == "transfer"]
-    graph = nx.DiGraph()
-    graph.add_edges_from(zip(transfers["source_account"], transfers["target_account"]))
+    if transfers.empty:
+        return set()
 
-    on_cycle: set[str] = set()
-    try:
-        for cycle in nx.simple_cycles(graph, length_bound=max_length):
-            on_cycle.update(cycle)
-    except TypeError:
-        # networkx below 3.1 has no length_bound; fall back to bounded search
-        for cycle in nx.simple_cycles(graph):
-            if len(cycle) <= max_length:
-                on_cycle.update(cycle)
-    return on_cycle
+    nodes = pd.Index(
+        pd.unique(pd.concat([transfers["source_account"], transfers["target_account"]]))
+    )
+    rows = nodes.get_indexer(transfers["source_account"])
+    cols = nodes.get_indexer(transfers["target_account"])
+    n = len(nodes)
+
+    adjacency = sparse.csr_matrix(
+        (np.ones(len(rows), dtype=np.int8), (rows, cols)), shape=(n, n)
+    )
+    adjacency.data[:] = 1
+
+    on_cycle_mask = np.zeros(n, dtype=bool)
+    power = adjacency
+    for length in range(2, max_length + 1):
+        power = power @ adjacency
+        if power.nnz > max_nnz:
+            # Refuse to densify. A shorter bound still identifies tight loops, and a
+            # feature that occasionally exhausts memory is worse than a slightly
+            # coarser one.
+            break
+        on_cycle_mask |= power.diagonal() > 0
+        power.data[:] = np.minimum(power.data, 1)
+
+    return set(nodes[on_cycle_mask])
 
 
 def build_graph_features(ledger, transactions: pd.DataFrame) -> pd.DataFrame:  # noqa: ANN001
