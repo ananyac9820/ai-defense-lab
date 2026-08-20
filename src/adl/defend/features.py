@@ -12,7 +12,7 @@ future into the training rows and inflates every number downstream.
 Levels:
   transaction  amount, hour, channel, MCC, device match, geography delta
   session      cadence, paste ratio, dwell, corrections, declines   <- signals A and B
-  graph        Phase 3
+  graph        degree ratios, pass-through, residence, cycles       <- adl.defend.graph_features
 """
 
 from __future__ import annotations
@@ -253,15 +253,24 @@ def build_features(ledger) -> pd.DataFrame:  # noqa: ANN001 - Ledger, avoiding a
     out = out.join(
         txns[["session_id"]].join(sess.set_index("session_id"), on="session_id")[SESSION_FEATURES]
     )
+
+    # --- graph level -------------------------------------------------------
+    from .graph_features import build_graph_features
+
+    out = out.join(build_graph_features(ledger, txns))
     return out
 
 
 def feature_columns(levels: set[str], drop: list[str] | None = None) -> list[str]:
+    from .graph_features import GRAPH_FEATURES
+
     cols: list[str] = []
     if "transaction" in levels:
         cols += TRANSACTION_FEATURES + VELOCITY_FEATURES
     if "session" in levels:
         cols += SESSION_FEATURES
+    if "graph" in levels:
+        cols += GRAPH_FEATURES
     for column in drop or []:
         if column in cols:
             cols.remove(column)

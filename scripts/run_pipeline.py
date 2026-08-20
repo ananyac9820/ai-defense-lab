@@ -181,13 +181,19 @@ def main(argv: list[str] | None = None) -> int:
         review_cost_inr=review_cost, amounts=amounts_test,
     )
 
+    all_levels = {"transaction", "session", "graph"}
     variants: list[tuple[str, list[str], bool]] = [
+        # Each level is added in turn so the lift it contributes is a stated number
+        # rather than an assertion (PDF S6.1), and the two behavioural signals are
+        # dropped one at a time so neither can be a hidden crutch (NOTES.md D-004).
         ("txn_only", feature_columns({"transaction"}), False),
-        ("txn+session", feature_columns({"transaction", "session"}), True),
+        ("txn+session", feature_columns({"transaction", "session"}), False),
+        ("all_levels", feature_columns(all_levels), True),
+        ("all_levels_minus_graph", feature_columns({"transaction", "session"}), False),
         ("all_levels_minus_coercion_signal",
-         feature_columns({"transaction", "session"}, drop=COERCION_SIGNAL_FEATURES), False),
+         feature_columns(all_levels, drop=COERCION_SIGNAL_FEATURES), False),
         ("all_levels_minus_cadence_signal",
-         feature_columns({"transaction", "session"}, drop=CADENCE_SIGNAL_FEATURES), False),
+         feature_columns(all_levels, drop=CADENCE_SIGNAL_FEATURES), False),
     ]
 
     ablation: list[dict[str, Any]] = []
