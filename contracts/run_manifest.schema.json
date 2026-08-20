@@ -118,7 +118,7 @@
       "required": ["discriminator_auc", "comparable_columns", "excluded_columns"],
       "additionalProperties": false,
       "properties": {
-        "discriminator_auc": { "type": "number", "minimum": 0, "maximum": 1, "description": "Approaching 0.5 means indistinguishable." },
+        "discriminator_auc": { "type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "Approaching 0.5 means indistinguishable. Null until a reference profile exists to discriminate against - stated as null rather than filled with a number that measured something else." },
         "comparable_columns": { "type": "array", "items": { "type": "string" } },
         "excluded_columns": {
           "type": "array",

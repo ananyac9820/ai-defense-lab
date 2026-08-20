@@ -1,0 +1,252 @@
+{
+  "contract_version": "0.1.0",
+  "generated_at": "2026-06-01T00:00:00Z",
+  "grammar_version": "0.1.0",
+  "vectors": [
+    {
+      "vector_id": "V001",
+      "name": "BIN sweep via AI-scripted checkout bot",
+      "channel": "cards_cnp",
+      "ai_capability": "agentic_automation",
+      "objective": "credential_capture",
+      "chain": [
+        "phish_credential",
+        "card_test_sweep",
+        "drain_single"
+      ],
+      "data_signature": "High authorisation velocity from a single device across many card numbers, elevated decline ratio, and inter-arrival timing far more regular than a human checkout flow produces. The rhythm is the tell, not any single transaction.",
+      "parameters": {
+        "cards_per_sweep": [
+          40,
+          260
+        ],
+        "probe_amount_inr": [
+          10,
+          90
+        ],
+        "inter_arrival_ms": [
+          900,
+          2600
+        ],
+        "decline_ratio": [
+          0.55,
+          0.9
+        ],
+        "drain_amount_inr": [
+          8000,
+          140000
+        ]
+      },
+      "source": {
+        "case": "Card testing bots increasingly script human-like checkout behaviour to evade rate limits; Mastercard names CNP as the majority of card fraud losses as commerce moves online.",
+        "stat": "majority of card fraud losses",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/Insights/2025/sharpening-card-fraud-defenses-in-the-age-of-risk.html",
+        "doc_ref": "33_AI_Era_Frauds #9 (card testing / BIN attacks), #8 (CNP)",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "session"
+      ],
+      "holdout": "none",
+      "generation": 0,
+      "parent_vector_id": null,
+      "mutation_mode": null,
+      "narrative": null
+    },
+    {
+      "vector_id": "V002",
+      "name": "Mule layering of scam proceeds",
+      "channel": "bank_transfer",
+      "ai_capability": "llm_text_generation",
+      "objective": "laundering_layering",
+      "chain": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "data_signature": "Fan-out into a set of recently opened accounts with near-equal money-in and money-out, short residence time at each hop, and shared device fingerprints across accounts that are otherwise unrelated. Invisible in any single row.",
+      "parameters": {
+        "n_mules": [
+          4,
+          14
+        ],
+        "hop_delay_minutes": [
+          3,
+          55
+        ],
+        "split_ratio_jitter": [
+          0.05,
+          0.3
+        ],
+        "residence_seconds": [
+          60,
+          5400
+        ]
+      },
+      "source": {
+        "case": "Mastercard's AI Garage doubled compromised-card detection by combining generative AI with graph technology over relationships between accounts, devices and cards; mule networks are the canonical graph-visible fraud.",
+        "stat": "2x compromised-card detection",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/stories/2024/inside-the-algorithm-how-gen-ai-and-graph-technology-are-cracking-down-on-card-sharks.html",
+        "doc_ref": "33_AI_Era_Frauds #27 (mule account networks); Research_Backed_Plan S1A",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph"
+      ],
+      "holdout": "none",
+      "generation": 0,
+      "parent_vector_id": null,
+      "mutation_mode": null,
+      "narrative": null
+    },
+    {
+      "vector_id": "V003",
+      "name": "Deepfake investment scam driving an authorised push payment",
+      "channel": "upi_instant",
+      "ai_capability": "deepfake_video",
+      "objective": "authorised_push_payment",
+      "chain": [
+        "add_beneficiary",
+        "micro_test",
+        "drain_single"
+      ],
+      "data_signature": "The victim's own device, own credentials, own location. What differs is how they interact: payee ID pasted rather than typed, unusually long dwell before confirm, elevated correction rate, and a read-to-me cadence of long pause followed by a burst of input. Every conventional signal says legitimate.",
+      "parameters": {
+        "payee_age_minutes": [
+          1,
+          40
+        ],
+        "micro_test_amount_inr": [
+          1,
+          100
+        ],
+        "drain_amount_inr": [
+          50000,
+          4300000
+        ],
+        "paste_rate_payee": [
+          0.6,
+          0.95
+        ],
+        "confirm_dwell_ms": [
+          3000,
+          22000
+        ]
+      },
+      "source": {
+        "case": "A Pune resident lost INR 43 lakh to a deepfaked video of well-known businesspeople endorsing a fake trading platform; deepfake celebrity investment scams are the single largest deepfake-fraud category.",
+        "stat": "INR 43 lakh; 52% of global deepfake fraud losses",
+        "citation_url": "https://scamwatchhq.com/india-scams-2026-digital-arrest-upi-fraud-epidemic/",
+        "doc_ref": "33_AI_Era_Frauds #21, #24 (APP fraud); Research_Backed_Plan S2",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "session",
+        "transaction"
+      ],
+      "holdout": "none",
+      "generation": 0,
+      "parent_vector_id": null,
+      "mutation_mode": null,
+      "narrative": null
+    },
+    {
+      "vector_id": "V004",
+      "name": "SIM swap to account takeover with cloned-voice OTP capture",
+      "channel": "wallets_tokenisation",
+      "ai_capability": "voice_cloning",
+      "objective": "account_takeover",
+      "chain": [
+        "clone_voice_otp",
+        "register_device",
+        "provision_token",
+        "drain_single"
+      ],
+      "data_signature": "Device change followed within minutes by token provisioning and extraction, with a geography discontinuity relative to the account's home geo that no legitimate travel pattern explains.",
+      "parameters": {
+        "minutes_device_to_drain": [
+          4,
+          180
+        ],
+        "geo_jump_km": [
+          400,
+          2200
+        ],
+        "drain_amount_inr": [
+          20000,
+          900000
+        ],
+        "otp_dwell_ms": [
+          4000,
+          26000
+        ]
+      },
+      "source": {
+        "case": "A UAE bank manager approved a USD 35M transfer after a cloned-director voice call; a cloned voice of Bharti Airtel's chairman was used against an executive. Mastercard-linked research expects account takeover to cause up to USD 17B in 2025 losses.",
+        "stat": "USD 35M single incident; USD 17B expected ATO losses",
+        "citation_url": "https://arxiv.org/pdf/2507.00907",
+        "doc_ref": "33_AI_Era_Frauds #15, #2, #4; Research_Backed_Plan S2",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "transaction",
+        "graph"
+      ],
+      "holdout": "none",
+      "generation": 0,
+      "parent_vector_id": null,
+      "mutation_mode": null,
+      "narrative": null
+    },
+    {
+      "vector_id": "V005",
+      "name": "Synthetic identity onboarded through deepfake video KYC",
+      "channel": "kyc_onboarding",
+      "ai_capability": "synthetic_identity",
+      "objective": "new_account_fraud",
+      "chain": [
+        "synthesise_identity",
+        "deepfake_kyc",
+        "open_mule_account",
+        "structured_withdrawal"
+      ],
+      "data_signature": "Thin-file account with no historical footprint, an onboarding session that completes faster than the human distribution, then a jump to high velocity with withdrawal amounts clustered just under a round threshold.",
+      "parameters": {
+        "days_dormant_after_open": [
+          2,
+          45
+        ],
+        "kyc_session_seconds": [
+          40,
+          150
+        ],
+        "threshold_inr": 50000,
+        "under_threshold_margin_inr": [
+          500,
+          4800
+        ],
+        "n_withdrawals": [
+          4,
+          18
+        ]
+      },
+      "source": {
+        "case": "RBI reported an eightfold year-on-year jump in fraud losses to INR 21,367 crore in H1 FY2024-25, driven largely by AI-generated synthetic identities bypassing video-KYC liveness checks. Mastercard names synthetic identity its fastest-growing fraud category.",
+        "stat": "INR 21,367 crore; 8x YoY",
+        "citation_url": "https://hyperverge.co/blog/what-is-a-deepfake/",
+        "doc_ref": "33_AI_Era_Frauds #1, #3, #28; Research_Backed_Plan S2",
+        "regulator_advisory": "RBI H1 FY2024-25 fraud reporting"
+      },
+      "expected_levels": [
+        "graph",
+        "session"
+      ],
+      "holdout": "none",
+      "generation": 0,
+      "parent_vector_id": null,
+      "mutation_mode": null,
+      "narrative": null
+    }
+  ]
+}

@@ -247,3 +247,101 @@ the check for the rest of the interface work.
 
 Mule-ring fixture generator emitted a self-loop when the ring's sink account was also
 treated as a hop. Caught by the referential-integrity test, not by eye.
+
+---
+
+# Phase 2 — Thin vertical slice (20 Aug 2026)
+
+Pipeline executes start to finish: taxonomy → simulator → features → leak-free split →
+baseline → levelled detector → metrics → misses.json → run manifest → published artefacts.
+
+## D-018 — Detection is scored per attack instance, not per row
+
+**Contract change, made after the first end-to-end run. Flagging rather than burying.**
+
+`instance_id` added to `transactions` and `sessions` in the ledger contract, and to the
+label-column list.
+
+Two reasons, and the first is a straight contract bug: `misses.json` already required an
+`instance_id`, and the ledger had no way to name one. Phase 2 was filling it with a
+transaction id, which misrepresents what a miss is.
+
+The second is that row-weighted recall is the wrong unit and flatters the result badly. A
+card-testing sweep emits twenty rows and counts twenty times; an authorised push payment
+emits one and counts once. So a row metric mostly reports how well the detector finds the
+noisiest vector — and a fraud team that catches nineteen of twenty probes after the money
+has gone has caught nothing. An instance now counts as detected when any of its rows
+scores above the operating threshold, which is what an alert queue actually does. Row
+figures are still printed alongside, never instead.
+
+## D-019 — Three leaks found by running it, not by reading it
+
+**1. Mules occupied a contiguous block of the account id space.** `mule_pool` was
+`account_ids[-n_mules:]`, so the raw identifier predicted the label at AUC 0.72 on its
+own. An id that encodes ground truth is a leak nothing downstream can undo. Mules are now
+a uniform random choice across the id space, with a regression test.
+
+**2. Attack chains ran off the end of the window.** `World.when()` sampled uniformly
+across the whole simulation period, so the later stages of long chains landed past the end
+of legitimate traffic. The tail of the ledger was disproportionately fraudulent and
+transaction-id ordering alone predicted the label at AUC 0.60. Attack start times now
+reserve a 50-day horizon.
+
+**3. One vector supplied 80% of the fraudulent rows.** The card-testing sweep emitted up
+to 60 rows per instance while the APP-fraud vector emitted two, so the first run reported
+AUC-PR 0.999 and it was almost entirely V001. Sweep size is now capped at 6–26 probes, and
+instance-level scoring is the real fix.
+
+## D-020 — The provenance test runs under the leak-free split
+
+Under a random split the test measured burst memorisation rather than provenance: every
+individual formatting feature sat at chance while the combination reached 0.69, because
+fraudulent rows arrive in bursts that share a timestamp and occupy adjacent ids, and a
+random split puts half a burst in train and half in test.
+
+It now uses `time_and_account_split`, the same protocol as the real detector. Two things
+are also excluded from its feature set, both after a failing run:
+
+- **Null patterns.** A bank transfer genuinely has no merchant, and fraud favours transfer
+  rails, so nullity is signal about the transaction rather than about the writer.
+- **Raw entity identifiers.** Handed the full account id, a tree memorises which accounts
+  are mules — identity memorisation, which the account-disjoint split exists to prevent,
+  not a formatting artefact.
+
+What remains is what the test is actually for: sub-second precision, amount rounding,
+rupee digit, and transaction-id ordinal. All at chance, individually and combined.
+
+## D-021 — Performance, and where it went
+
+The first 300k run did not finish in ten minutes. Three hot spots, all found by profiling
+rather than guessing:
+
+| Hot spot | Cost | Fix |
+|---|---|---|
+| `World.merchant()` filtering the merchant DataFrame per call | 82% of simulator runtime | prebuilt index by MCC |
+| session aggregates via `groupby.apply` with a Python function per session | minutes on 140k sessions | one pass of vectorised `groupby.agg`; entropy rewritten as `log S − (Σ g log g)/S` so it comes out of two sums |
+| expanding per-account mean/std via `transform(lambda)` | seconds per run, worse at scale | cumulative sums |
+
+Feature building went from unfinishable to 5.9s on 300k rows. The simulator is now ~1ms
+per transaction — 300k in ~4.5 minutes, so a full 2M run is roughly half an hour. That is
+tolerable as a one-off but not for iteration; if Phase 3 needs repeated full-scale runs it
+gets vectorised.
+
+## Phase 2 results
+
+Measured, not estimated. 300k transactions, 25k accounts, seed 20260831. See the section
+below for the honest reading of what they are worth.
+
+## What these numbers are NOT yet worth
+
+- **38 attack instances in the test window.** Every per-vector figure is built on single
+  digits. Nothing here is publishable until the full-scale run.
+- **The coercion signal contributes nothing measurable**, because only the APP-fraud
+  vector produces payee-entry events and it supplies about five instances per run. Seven
+  fraudulent payee events against thirteen thousand legitimate ones is realistic scarcity,
+  and it is also too little to learn from. Phase 3 needs either far more volume or an
+  instance mix weighted towards the behavioural vectors.
+- **`metrics_unseen` currently carries the seen numbers** because no families are held
+  out yet. Tracked as P-04.
+- **The split discards 42% of rows** to satisfy both conditions at once. Structurally
+  correct, but worth stating in the walkthrough rather than letting someone discover it.

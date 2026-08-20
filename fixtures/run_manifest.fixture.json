@@ -3,7 +3,7 @@
   "run_id": "adl-fixture-0001",
   "created_at": "2026-06-01T00:00:00Z",
   "seed": 20260831,
-  "config_hash": "74910d593aae0629a4757b9f06fc1ebe60cfcfd103c4eeba894a91d5840491a5",
+  "config_hash": "e37a35d8120307070ffe52ad1cfc7fc2d861645212d09c047a11528d654f43f0",
   "code_version": null,
   "prevalence": 0.01,
   "is_fixture": true,
@@ -14,10 +14,12 @@
       "log_amount",
       "hour_of_day",
       "day_of_week",
-      "channel",
-      "mcc",
-      "auth_result",
-      "geography_matches_home"
+      "channel_code",
+      "mcc_code",
+      "auth_declined",
+      "geography_matches_home",
+      "account_age_days",
+      "device_age_days"
     ],
     "metrics": {
       "prevalence": 0.01,

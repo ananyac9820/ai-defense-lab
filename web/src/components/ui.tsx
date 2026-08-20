@@ -102,6 +102,27 @@ export function FixtureBadge({ isFixture }: { isFixture: boolean }) {
   );
 }
 
+/**
+ * Marks one element - not the whole page - as a synthesised shape rather than a measured
+ * result. Tracked in PLACEHOLDERS.md, and nothing ships with one of these still attached.
+ */
+export function PlaceholderBadge({ id, what }: { id: string; what: string }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] tracking-[0.14em] uppercase"
+      style={{
+        borderColor: 'color-mix(in oklab, var(--color-attack) 55%, transparent)',
+        color: 'var(--color-attack)',
+        background: 'color-mix(in oklab, var(--color-attack) 12%, transparent)',
+      }}
+      title={`${id}: ${what}`}
+    >
+      <span aria-hidden>▲</span> placeholder · {id}
+    </span>
+  );
+}
+
+
 export function Empty({ what }: { what: string }) {
   return (
     <div className="grid h-64 place-items-center text-sm text-[var(--color-slate)]">
