@@ -1,0 +1,184 @@
+{
+  "$comment": "FROZEN CONTRACT v0. Compositional attack grammar. Source: AI_Defense_Lab_Strategy.pdf S4.2. Changing this file requires agreement, not a unilateral edit.",
+  "version": "0.1.0",
+  "frozen_on": "2026-08-20",
+  "axes": {
+    "channel": [
+      "cards_cnp",
+      "upi_instant",
+      "wallets_tokenisation",
+      "bank_transfer",
+      "merchant_payouts",
+      "kyc_onboarding",
+      "agentic_commerce"
+    ],
+    "ai_capability": [
+      "voice_cloning",
+      "deepfake_video",
+      "llm_text_generation",
+      "synthetic_identity",
+      "agentic_automation",
+      "document_forgery",
+      "agent_impersonation"
+    ],
+    "objective": [
+      "credential_capture",
+      "account_takeover",
+      "authorised_push_payment",
+      "new_account_fraud",
+      "laundering_layering",
+      "refund_chargeback_abuse",
+      "intent_forgery"
+    ]
+  },
+  "stage_order": ["acquire", "establish", "validate", "extract", "obfuscate"],
+  "composition_rules": {
+    "min_length": 2,
+    "max_length": 8,
+    "stages_non_decreasing": true,
+    "no_immediate_repeat": true,
+    "max_per_stage": 2,
+    "terminal_stage_required": ["extract", "obfuscate"],
+    "terminal_exempt_objectives": ["credential_capture", "new_account_fraud", "intent_forgery"],
+    "$comment": "A chain must reach the extract or obfuscate stage unless its objective is one of the exempt set, which complete without moving money."
+  },
+  "primitives": {
+    "phish_credential": {
+      "stage": "acquire",
+      "emits": ["sessions"],
+      "description": "Credential harvested via AI-authored phishing or smishing; victim authenticates on an attacker-controlled surface.",
+      "data_footprint": "Session from an unfamiliar device fingerprint with abnormally direct navigation and low input jitter.",
+      "detection_level_hint": ["session"]
+    },
+    "clone_voice_otp": {
+      "stage": "acquire",
+      "emits": ["sessions"],
+      "description": "Cloned-voice call induces the victim to read back an OTP or approve a step-up prompt.",
+      "data_footprint": "Step-up approval with long pre-approval dwell and paste-free but externally paced input cadence.",
+      "detection_level_hint": ["session"]
+    },
+    "deepfake_kyc": {
+      "stage": "acquire",
+      "emits": ["accounts", "sessions"],
+      "description": "Synthetic or face-swapped video passes an onboarding liveness check.",
+      "data_footprint": "New account whose onboarding session completes faster than the human distribution, with no prior device history.",
+      "detection_level_hint": ["session", "graph"]
+    },
+    "synthesise_identity": {
+      "stage": "acquire",
+      "emits": ["accounts"],
+      "description": "Fabricated identity assembled from part-real data; thin file with no historical footprint.",
+      "data_footprint": "Account with recent opened_at, no inbound history, and shared identity attributes across the graph.",
+      "detection_level_hint": ["graph"]
+    },
+    "compromise_agent": {
+      "stage": "acquire",
+      "emits": ["sessions"],
+      "description": "An AI shopping or payment agent's authorisation flow is hijacked or its intent proof forged.",
+      "data_footprint": "Agent-initiated session with machine-regular event cadence and no human interaction events.",
+      "detection_level_hint": ["session"]
+    },
+
+    "provision_token": {
+      "stage": "establish",
+      "emits": ["transactions", "graph_edges"],
+      "description": "Stolen card provisioned into a wallet or tokenised on an attacker device.",
+      "data_footprint": "Token provisioning event binding an existing card to a device with no prior relationship.",
+      "detection_level_hint": ["transaction", "graph"]
+    },
+    "register_device": {
+      "stage": "establish",
+      "emits": ["sessions", "graph_edges"],
+      "description": "New device bound to the account, frequently following a SIM-swap or credential compromise.",
+      "data_footprint": "Device-change event with geography discontinuity relative to the account's home geo.",
+      "detection_level_hint": ["transaction", "graph"]
+    },
+    "open_mule_account": {
+      "stage": "establish",
+      "emits": ["accounts", "graph_edges"],
+      "description": "Receiving account opened or recruited to hold fraud proceeds briefly before onward transfer.",
+      "data_footprint": "New account with near-equal money-in and money-out and near-zero resting balance.",
+      "detection_level_hint": ["graph"]
+    },
+    "add_beneficiary": {
+      "stage": "establish",
+      "emits": ["sessions", "graph_edges"],
+      "description": "Novel payee added immediately before extraction.",
+      "data_footprint": "Beneficiary with zero prior transaction history, added minutes before a large transfer.",
+      "detection_level_hint": ["transaction", "graph"]
+    },
+
+    "micro_test": {
+      "stage": "validate",
+      "emits": ["transactions"],
+      "description": "Small-value probe confirming an instrument or payee is live.",
+      "data_footprint": "Low-amount authorisation immediately preceding a materially larger one on the same instrument.",
+      "detection_level_hint": ["session"]
+    },
+    "card_test_sweep": {
+      "stage": "validate",
+      "emits": ["transactions"],
+      "description": "Rapid sequential authorisations across many card numbers to find live ones.",
+      "data_footprint": "High authorisation velocity per device with an elevated decline ratio and regular inter-arrival timing.",
+      "detection_level_hint": ["session"]
+    },
+    "balance_probe": {
+      "stage": "validate",
+      "emits": ["sessions"],
+      "description": "Balance or limit enquiry to size the extraction before attempting it.",
+      "data_footprint": "Balance-view event with no subsequent legitimate activity, followed by extraction.",
+      "detection_level_hint": ["session"]
+    },
+
+    "drain_single": {
+      "stage": "extract",
+      "emits": ["transactions", "graph_edges"],
+      "description": "Single high-value transfer or purchase removing the available balance.",
+      "data_footprint": "Amount at a high percentile of the account's own history, to a novel beneficiary.",
+      "detection_level_hint": ["transaction"]
+    },
+    "structured_withdrawal": {
+      "stage": "extract",
+      "emits": ["transactions", "graph_edges"],
+      "description": "Extraction split into many transfers sized below reporting or alerting thresholds.",
+      "data_footprint": "Cluster of amounts just under a round threshold within a short window.",
+      "detection_level_hint": ["session", "graph"]
+    },
+    "merchant_collusion_payout": {
+      "stage": "extract",
+      "emits": ["transactions", "graph_edges"],
+      "description": "Value extracted through a controlled or complicit merchant acquiring account.",
+      "data_footprint": "Concentrated volume from few payers into a young merchant with atypical category mix.",
+      "detection_level_hint": ["graph"]
+    },
+    "agentic_purchase": {
+      "stage": "extract",
+      "emits": ["transactions"],
+      "description": "Purchase executed by a manipulated AI agent on the victim's behalf.",
+      "data_footprint": "Authorisation carrying an agent identifier with no corresponding human interaction event.",
+      "detection_level_hint": ["transaction", "session"]
+    },
+
+    "layer_through_mules": {
+      "stage": "obfuscate",
+      "emits": ["transactions", "graph_edges"],
+      "description": "Proceeds split and routed through a set of mule accounts to break the trail.",
+      "data_footprint": "Fan-out then fan-in topology with short residence time at each hop.",
+      "detection_level_hint": ["graph"]
+    },
+    "cross_channel_hop": {
+      "stage": "obfuscate",
+      "emits": ["transactions", "graph_edges"],
+      "description": "Value moved between rails (card to wallet to instant transfer) to defeat single-channel monitoring.",
+      "data_footprint": "Same value traversing two or more channels within a short window.",
+      "detection_level_hint": ["graph"]
+    },
+    "dispute_after_extraction": {
+      "stage": "obfuscate",
+      "emits": ["sessions"],
+      "description": "Chargeback or dispute raised after value has been extracted, recovering the funds a second time.",
+      "data_footprint": "Dispute narrative clustering with other disputes from linked accounts.",
+      "detection_level_hint": ["session", "graph"]
+    }
+  }
+}

@@ -1,0 +1,34 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+web/dist/
+web/.vite/
+
+# Reference datasets - NEVER committed (NOTES.md D-006).
+# IEEE-CIS is competition-licensed; only the derived profile is redistributable.
+data/reference/*
+!data/reference/.gitkeep
+!data/reference/README.md
+
+# Generated artefacts. The full ledger is millions of rows and is regenerable from
+# config.yaml plus the seed, so it does not belong in git. The demo slice and the
+# run manifest DO get committed - see artifacts/.gitignore.
+artifacts/*
+!artifacts/.gitignore
+
+# Secrets
+.env
+*.key
+
+# OS
+Thumbs.db
+.DS_Store
