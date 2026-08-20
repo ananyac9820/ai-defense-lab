@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ananyac9820/ai-defense-lab/contracts/misses.schema.json",
+  "title": "misses.json",
+  "description": "FROZEN CONTRACT v0. Output of Pillar 3 (Defend), input to the red-team strategist. Source: AI_Defense_Lab_Strategy.pdf S7.1, plus top_shap, which S7.3's escalation ladder requires the strategist to have.",
+  "type": "object",
+  "required": ["contract_version", "run_id", "generation", "threshold", "prevalence", "misses", "per_vector"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": { "const": "0.1.0" },
+    "run_id": { "type": "string", "description": "Matches run_manifest.json run_id." },
+    "generation": { "type": "integer", "minimum": 0 },
+    "threshold": { "type": "number", "minimum": 0, "maximum": 1, "description": "Operating threshold at which these were counted as missed." },
+    "prevalence": { "type": "number", "exclusiveMinimum": 0, "maximum": 1, "description": "Fraud base rate of the evaluation set. Stated here so no miss rate is ever read without it." },
+    "misses": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/miss" }
+    },
+    "per_vector": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/per_vector_row" }
+    }
+  },
+  "$defs": {
+    "miss": {
+      "type": "object",
+      "required": ["instance_id", "vector_id", "chain", "primitives_present", "score", "level_scores", "top_shap"],
+      "additionalProperties": false,
+      "properties": {
+        "instance_id": { "type": "string", "description": "Identifies the attack instance in the ledger." },
+        "vector_id": { "type": "string", "pattern": "^V[0-9]{3}$" },
+        "chain": { "type": "array", "items": { "type": "string" } },
+        "primitives_present": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Primitives that actually emitted rows for this instance. May be shorter than chain when a primitive produced no observable footprint."
+        },
+        "score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "level_scores": {
+          "type": "object",
+          "required": ["transaction", "session", "graph"],
+          "additionalProperties": false,
+          "properties": {
+            "transaction": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+            "session": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+            "graph": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+          }
+        },
+        "top_shap": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "object",
+            "required": ["feature", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "feature": { "type": "string" },
+              "value": { "type": "number", "description": "Signed SHAP contribution. Negative values pushed the instance towards 'legitimate' - those are what the strategist targets." }
+            }
+          }
+        },
+        "evasion_hypothesis": {
+          "type": ["string", "null"],
+          "description": "Strategist-authored, written back after mutation. Null on first emission."
+        }
+      }
+    },
+    "per_vector_row": {
+      "type": "object",
+      "required": ["vector_id", "n_instances", "n_detected", "detection_rate"],
+      "additionalProperties": false,
+      "properties": {
+        "vector_id": { "type": "string", "pattern": "^V[0-9]{3}$" },
+        "n_instances": { "type": "integer", "minimum": 0 },
+        "n_detected": { "type": "integer", "minimum": 0 },
+        "detection_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "holdout": { "enum": ["none", "family", "composition"] }
+      }
+    }
+  }
+}

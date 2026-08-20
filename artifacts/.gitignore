@@ -1,0 +1,9 @@
+# Ignore everything generated here...
+*
+!.gitignore
+!published/
+!published/**
+
+# ...except the published set: the demo slice, the run manifest and the misses logs
+# that the deployed prototype and the walkthrough document actually read.
+# The full ledger stays out of git; it is regenerable with one command.

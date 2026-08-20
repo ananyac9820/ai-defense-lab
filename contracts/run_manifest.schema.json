@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ananyac9820/ai-defense-lab/contracts/run_manifest.schema.json",
+  "title": "run_manifest.json",
+  "description": "FROZEN CONTRACT v0. Not in the PDF - added 2026-08-20 because the prototype needs a single artefact describing a run, and inventing it under pressure in Phase 5 is exactly the late-integration failure S10 rates Severe. This is the only file the frontend must understand in order to render every view.",
+  "type": "object",
+  "required": ["contract_version", "run_id", "created_at", "seed", "config_hash", "prevalence", "generations", "artefacts", "fidelity", "cost_model"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": { "const": "0.1.0" },
+    "run_id": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "seed": { "type": "integer" },
+    "config_hash": { "type": "string", "description": "SHA-256 of config.yaml. Two runs with the same seed and config_hash must produce identical numbers." },
+    "code_version": { "type": ["string", "null"], "description": "Git commit SHA, when available." },
+    "prevalence": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+    "is_fixture": {
+      "type": "boolean",
+      "default": false,
+      "description": "True for committed fixture data. The prototype renders a visible FIXTURE badge when set, so no screenshot of fake numbers can be mistaken for a result."
+    },
+    "baseline": { "$ref": "#/$defs/baseline" },
+    "generations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/generation" }
+    },
+    "fidelity": { "$ref": "#/$defs/fidelity" },
+    "cost_model": {
+      "type": "object",
+      "required": ["review_cost_inr", "currency"],
+      "additionalProperties": false,
+      "properties": {
+        "review_cost_inr": { "type": "number", "minimum": 0 },
+        "currency": { "const": "INR" }
+      }
+    },
+    "artefacts": {
+      "type": "object",
+      "description": "Relative paths from the artefacts root.",
+      "required": ["attacks", "ledger_dir", "demo_slice", "misses"],
+      "additionalProperties": false,
+      "properties": {
+        "attacks": { "type": "string" },
+        "ledger_dir": { "type": "string" },
+        "demo_slice": { "type": "string", "description": "25-50k row slice the UI actually loads (NOTES.md D-003)." },
+        "misses": { "type": "array", "items": { "type": "string" }, "description": "One misses.json path per generation." },
+        "graph_snapshot": { "type": ["string", "null"] }
+      }
+    }
+  },
+  "$defs": {
+    "baseline": {
+      "type": "object",
+      "description": "NOTES.md D-002. Every headline number is reported as lift over this. Defined here so the baseline can never be quietly weakened to inflate the lift.",
+      "required": ["name", "features", "metrics"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "features": { "type": "array", "items": { "type": "string" }, "description": "Transaction-level only. Session and graph features are excluded by definition." },
+        "metrics": { "$ref": "#/$defs/metrics" }
+      }
+    },
+    "generation": {
+      "type": "object",
+      "required": ["generation", "n_vectors", "n_transactions", "n_fraud", "metrics_seen", "metrics_unseen"],
+      "additionalProperties": false,
+      "properties": {
+        "generation": { "type": "integer", "minimum": 0 },
+        "n_vectors": { "type": "integer", "minimum": 0 },
+        "n_transactions": { "type": "integer", "minimum": 0 },
+        "n_fraud": { "type": "integer", "minimum": 0 },
+        "metrics_seen": { "$ref": "#/$defs/metrics" },
+        "metrics_unseen": { "$ref": "#/$defs/metrics", "description": "Held-out families and unseen compositions. S6.4: never merged with seen." },
+        "ablation": {
+          "type": "array",
+          "description": "Per-level and per-signal contribution. S6.1 requires the lift each level contributes; D-004 requires the behavioural signal's contribution to be a stated number.",
+          "items": {
+            "type": "object",
+            "required": ["variant", "metrics"],
+            "additionalProperties": false,
+            "properties": {
+              "variant": { "type": "string", "description": "e.g. txn_only, txn+session, all_levels, all_levels_minus_coercion_signal" },
+              "metrics": { "$ref": "#/$defs/metrics" }
+            }
+          }
+        },
+        "detection_rate": { "type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "Headline for the Loop Helix: fraction of fraudulent instances caught at the operating threshold." },
+        "n_chains_proposed": { "type": ["integer", "null"], "minimum": 0 },
+        "n_chains_rejected": { "type": ["integer", "null"], "minimum": 0, "description": "S7.2 says the rejection rate is itself an interesting number." }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["prevalence", "precision", "recall", "f1", "auc_roc", "auc_pr", "alert_rate"],
+      "additionalProperties": false,
+      "properties": {
+        "prevalence": { "type": "number", "exclusiveMinimum": 0, "maximum": 1, "description": "S5.2: stated next to every metric, without exception." },
+        "precision": { "type": "number", "minimum": 0, "maximum": 1 },
+        "recall": { "type": "number", "minimum": 0, "maximum": 1 },
+        "f1": { "type": "number", "minimum": 0, "maximum": 1 },
+        "auc_roc": { "type": "number", "minimum": 0, "maximum": 1 },
+        "auc_pr": { "type": "number", "minimum": 0, "maximum": 1, "description": "The honest headline at low prevalence." },
+        "alert_rate": { "type": "number", "minimum": 0, "maximum": 1, "description": "Fraction of all transactions flagged. Determines review staffing." },
+        "net_value_protected_inr": { "type": ["number", "null"] },
+        "scoring_latency_p50_ms": { "type": ["number", "null"], "minimum": 0 },
+        "scoring_latency_p99_ms": { "type": ["number", "null"], "minimum": 0 },
+        "lift_over_baseline": {
+          "type": ["object", "null"],
+          "description": "Percentage improvement over run_manifest.baseline, per metric. Null on the baseline row itself.",
+          "additionalProperties": { "type": "number" }
+        }
+      }
+    },
+    "fidelity": {
+      "type": "object",
+      "description": "S5.3. NOTES.md D-005: the discriminator runs only on columns the reference dataset also has.",
+      "required": ["discriminator_auc", "comparable_columns", "excluded_columns"],
+      "additionalProperties": false,
+      "properties": {
+        "discriminator_auc": { "type": "number", "minimum": 0, "maximum": 1, "description": "Approaching 0.5 means indistinguishable." },
+        "comparable_columns": { "type": "array", "items": { "type": "string" } },
+        "excluded_columns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Columns with no reference analogue - the behavioural telemetry. Calibrated against published effect sizes, not against a dataset. Surfaced in the UI as such."
+        },
+        "reference_profiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "serves_channels"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "enum": ["ieee_cis", "paysim", "ulb"] },
+              "serves_channels": { "type": "array", "items": { "type": "string" } },
+              "available": { "type": "boolean" }
+            }
+          }
+        },
+        "ks_per_column": { "type": ["object", "null"], "additionalProperties": { "type": "number" } },
+        "psi_per_column": { "type": ["object", "null"], "additionalProperties": { "type": "number" } },
+        "correlation_delta_frobenius": { "type": ["number", "null"], "description": "S5.3: joint structure is where naive generators fail, so this matters more than any per-column statistic." }
+      }
+    }
+  }
+}

@@ -1,0 +1,83 @@
+# AI Defense Lab - single source of configuration.
+# Every number in the submission is regenerable from this file plus a fixed seed.
+# The SHA-256 of this file is recorded in run_manifest.json as config_hash.
+
+run:
+  seed: 20260831            # master seed; every component derives a sub-seed from it
+  run_id_prefix: adl
+  artefacts_dir: artifacts
+
+simulation:
+  # NOTES.md D-003. Full ledger for metrics, small deterministic slice for the UI.
+  n_accounts: 40000
+  n_devices: 52000
+  n_merchants: 3000
+  n_transactions_target: 2000000
+  fraud_prevalence: 0.01     # PDF S5.2: stated beside every metric, never assumed
+  window_start: "2026-01-01T00:00:00Z"
+  window_days: 180
+  demo_slice_rows: 35000     # 25k-50k band agreed with the build brief
+
+  # Behavioural telemetry, NOTES.md D-004. Effect sizes are deliberately modest and
+  # the distributions overlap heavily: plenty of legitimate users paste a payee ID.
+  # If these need to be raised to make the signal work, that is a finding to report,
+  # not a knob to turn quietly.
+  behavioural:
+    enabled: true
+    legit_paste_rate_payee: 0.22        # legitimate users paste payee IDs often
+    coerced_paste_rate_payee: 0.71
+    legit_confirm_dwell_ms: [800, 4500]
+    coerced_confirm_dwell_ms: [3000, 22000]
+    legit_correction_rate: [0.0, 0.35]
+    coerced_correction_rate: [0.10, 0.60]
+    legit_cadence_cv: [0.35, 1.20]      # humans jitter
+    scripted_cadence_cv: [0.02, 0.18]   # scripts and agents do not
+    noise_floor: 0.15                   # fraction of instances given the opposite profile
+
+split:
+  # PDF S6.2. Both conditions, not either.
+  mode: time_and_account
+  train_fraction: 0.7
+  embargo_days: 3           # gap between train and test windows to kill boundary leakage
+
+detector:
+  levels: [transaction, session, graph]
+  model: lightgbm
+  operating_threshold: null  # chosen by net-value optimisation, written back to the manifest
+
+baseline:
+  # NOTES.md D-002. A reasonable baseline, not a strawman.
+  name: logistic_regression_transaction_only
+  features:
+    - amount_inr
+    - log_amount
+    - hour_of_day
+    - day_of_week
+    - channel
+    - mcc
+    - auth_result
+    - geography_matches_home
+
+cost_model:
+  review_cost_inr: 250       # NOTES.md D-010
+  currency: INR
+
+fidelity:
+  # NOTES.md D-005 / D-006. Profiles only, never rows.
+  reference_profiles:
+    ieee_cis:
+      serves_channels: [cards_cnp, wallets_tokenisation]
+      path: null             # set once the file is on disk
+    paysim:
+      serves_channels: [upi_instant, bank_transfer, merchant_payouts]
+      path: null
+  discriminator_target_auc: 0.60   # anything at or below this is reportable as strong
+
+loop:
+  generations: 5
+  mutation_modes: [recomposition, parameter_drift]
+  llm:
+    provider: gemini
+    model: gemini-2.5-flash
+    cache_dir: artifacts/llm_cache
+    live_calls: false        # NOTES.md D-009: cache is the default path, live is the exception

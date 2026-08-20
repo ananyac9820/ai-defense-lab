@@ -1,0 +1,1219 @@
+{
+  "contract_version": "0.1.0",
+  "run_id": "adl-fixture-g2",
+  "generation": 2,
+  "threshold": 0.5,
+  "prevalence": 0.01,
+  "misses": [
+    {
+      "instance_id": "g2-V001-000",
+      "vector_id": "V001",
+      "chain": [
+        "phish_credential",
+        "card_test_sweep",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "phish_credential",
+        "card_test_sweep"
+      ],
+      "score": 0.2333,
+      "level_scores": {
+        "transaction": 0.1369,
+        "session": 0.42,
+        "graph": 0.3815
+      },
+      "top_shap": [
+        {
+          "feature": "decline_ratio_1h",
+          "value": -0.5105
+        },
+        {
+          "feature": "device_geo_delta_km",
+          "value": 0.481
+        },
+        {
+          "feature": "correction_rate",
+          "value": -0.4649
+        },
+        {
+          "feature": "amount_z_account",
+          "value": -0.4669
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V001-001",
+      "vector_id": "V001",
+      "chain": [
+        "phish_credential",
+        "card_test_sweep",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "phish_credential",
+        "card_test_sweep",
+        "drain_single"
+      ],
+      "score": 0.2358,
+      "level_scores": {
+        "transaction": 0.3661,
+        "session": 0.4982,
+        "graph": 0.3439
+      },
+      "top_shap": [
+        {
+          "feature": "confirm_dwell_ms",
+          "value": 0.0095
+        },
+        {
+          "feature": "correction_rate",
+          "value": 0.3325
+        },
+        {
+          "feature": "payee_paste_ratio",
+          "value": 0.0361
+        },
+        {
+          "feature": "graph_passthrough_score",
+          "value": 0.4695
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V001-002",
+      "vector_id": "V001",
+      "chain": [
+        "phish_credential",
+        "card_test_sweep",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "phish_credential",
+        "card_test_sweep"
+      ],
+      "score": 0.4049,
+      "level_scores": {
+        "transaction": 0.34,
+        "session": 0.2434,
+        "graph": 0.2807
+      },
+      "top_shap": [
+        {
+          "feature": "correction_rate",
+          "value": 0.2599
+        },
+        {
+          "feature": "confirm_dwell_ms",
+          "value": -0.673
+        },
+        {
+          "feature": "device_geo_delta_km",
+          "value": -0.2315
+        },
+        {
+          "feature": "payee_paste_ratio",
+          "value": 0.0587
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V001-003",
+      "vector_id": "V001",
+      "chain": [
+        "phish_credential",
+        "card_test_sweep",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "phish_credential",
+        "card_test_sweep",
+        "drain_single"
+      ],
+      "score": 0.2041,
+      "level_scores": {
+        "transaction": 0.3628,
+        "session": 0.1378,
+        "graph": 0.1555
+      },
+      "top_shap": [
+        {
+          "feature": "fanout_degree_24h",
+          "value": -0.5407
+        },
+        {
+          "feature": "amount_z_account",
+          "value": 0.2197
+        },
+        {
+          "feature": "beneficiary_age_minutes",
+          "value": -0.3635
+        },
+        {
+          "feature": "decline_ratio_1h",
+          "value": 0.1233
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V001-004",
+      "vector_id": "V001",
+      "chain": [
+        "phish_credential",
+        "card_test_sweep",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "phish_credential",
+        "card_test_sweep"
+      ],
+      "score": 0.2364,
+      "level_scores": {
+        "transaction": 0.0339,
+        "session": 0.2384,
+        "graph": 0.1786
+      },
+      "top_shap": [
+        {
+          "feature": "payee_paste_ratio",
+          "value": -0.734
+        },
+        {
+          "feature": "device_geo_delta_km",
+          "value": 0.4405
+        },
+        {
+          "feature": "fanout_degree_24h",
+          "value": 0.1152
+        },
+        {
+          "feature": "decline_ratio_1h",
+          "value": -0.2673
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V001-005",
+      "vector_id": "V001",
+      "chain": [
+        "phish_credential",
+        "card_test_sweep",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "phish_credential",
+        "card_test_sweep",
+        "drain_single"
+      ],
+      "score": 0.2036,
+      "level_scores": {
+        "transaction": 0.4372,
+        "session": 0.4814,
+        "graph": 0.0875
+      },
+      "top_shap": [
+        {
+          "feature": "confirm_dwell_ms",
+          "value": 0.6579
+        },
+        {
+          "feature": "beneficiary_age_minutes",
+          "value": -0.014
+        },
+        {
+          "feature": "correction_rate",
+          "value": -0.0475
+        },
+        {
+          "feature": "session_cadence_cv",
+          "value": 0.2127
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V002-000",
+      "vector_id": "V002",
+      "chain": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "primitives_present": [
+        "open_mule_account",
+        "drain_single"
+      ],
+      "score": 0.1354,
+      "level_scores": {
+        "transaction": 0.0998,
+        "session": 0.434,
+        "graph": 0.1354
+      },
+      "top_shap": [
+        {
+          "feature": "amount_z_account",
+          "value": 0.3002
+        },
+        {
+          "feature": "beneficiary_age_minutes",
+          "value": -0.4104
+        },
+        {
+          "feature": "fanout_degree_24h",
+          "value": 0.7293
+        },
+        {
+          "feature": "decline_ratio_1h",
+          "value": 0.2947
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V002-001",
+      "vector_id": "V002",
+      "chain": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "primitives_present": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules"
+      ],
+      "score": 0.0858,
+      "level_scores": {
+        "transaction": 0.4297,
+        "session": 0.5357,
+        "graph": 0.3128
+      },
+      "top_shap": [
+        {
+          "feature": "amount_z_account",
+          "value": -0.1421
+        },
+        {
+          "feature": "payee_paste_ratio",
+          "value": 0.3521
+        },
+        {
+          "feature": "fanout_degree_24h",
+          "value": 0.2237
+        },
+        {
+          "feature": "beneficiary_age_minutes",
+          "value": 0.1018
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V002-002",
+      "vector_id": "V002",
+      "chain": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "primitives_present": [
+        "open_mule_account",
+        "drain_single"
+      ],
+      "score": 0.4553,
+      "level_scores": {
+        "transaction": 0.0746,
+        "session": 0.2839,
+        "graph": 0.3079
+      },
+      "top_shap": [
+        {
+          "feature": "graph_passthrough_score",
+          "value": -0.0208
+        },
+        {
+          "feature": "beneficiary_age_minutes",
+          "value": 0.0109
+        },
+        {
+          "feature": "payee_paste_ratio",
+          "value": -0.3274
+        },
+        {
+          "feature": "decline_ratio_1h",
+          "value": -0.0097
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V002-003",
+      "vector_id": "V002",
+      "chain": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "primitives_present": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules"
+      ],
+      "score": 0.3809,
+      "level_scores": {
+        "transaction": 0.1509,
+        "session": 0.2015,
+        "graph": 0.2023
+      },
+      "top_shap": [
+        {
+          "feature": "fanout_degree_24h",
+          "value": -0.2207
+        },
+        {
+          "feature": "session_cadence_cv",
+          "value": 0.0721
+        },
+        {
+          "feature": "payee_paste_ratio",
+          "value": 0.5382
+        },
+        {
+          "feature": "amount_z_account",
+          "value": -0.352
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V002-004",
+      "vector_id": "V002",
+      "chain": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "primitives_present": [
+        "open_mule_account",
+        "drain_single"
+      ],
+      "score": 0.398,
+      "level_scores": {
+        "transaction": 0.1913,
+        "session": 0.5555,
+        "graph": 0.2032
+      },
+      "top_shap": [
+        {
+          "feature": "correction_rate",
+          "value": 0.1686
+        },
+        {
+          "feature": "decline_ratio_1h",
+          "value": 0.0787
+        },
+        {
+          "feature": "beneficiary_age_minutes",
+          "value": 0.3524
+        },
+        {
+          "feature": "confirm_dwell_ms",
+          "value": -0.2071
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V002-005",
+      "vector_id": "V002",
+      "chain": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "primitives_present": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules"
+      ],
+      "score": 0.296,
+      "level_scores": {
+        "transaction": 0.4935,
+        "session": 0.4265,
+        "graph": 0.0823
+      },
+      "top_shap": [
+        {
+          "feature": "device_geo_delta_km",
+          "value": -0.3146
+        },
+        {
+          "feature": "graph_passthrough_score",
+          "value": 0.543
+        },
+        {
+          "feature": "fanout_degree_24h",
+          "value": -0.7538
+        },
+        {
+          "feature": "payee_paste_ratio",
+          "value": 0.5534
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V003-000",
+      "vector_id": "V003",
+      "chain": [
+        "add_beneficiary",
+        "micro_test",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "add_beneficiary",
+        "micro_test"
+      ],
+      "score": 0.2983,
+      "level_scores": {
+        "transaction": 0.3703,
+        "session": 0.2504,
+        "graph": 0.3449
+      },
+      "top_shap": [
+        {
+          "feature": "device_geo_delta_km",
+          "value": -0.6524
+        },
+        {
+          "feature": "correction_rate",
+          "value": 0.0408
+        },
+        {
+          "feature": "graph_passthrough_score",
+          "value": -0.4761
+        },
+        {
+          "feature": "amount_z_account",
+          "value": 0.3655
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V003-001",
+      "vector_id": "V003",
+      "chain": [
+        "add_beneficiary",
+        "micro_test",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "add_beneficiary",
+        "micro_test",
+        "drain_single"
+      ],
+      "score": 0.3165,
+      "level_scores": {
+        "transaction": 0.0964,
+        "session": 0.1633,
+        "graph": 0.3056
+      },
+      "top_shap": [
+        {
+          "feature": "confirm_dwell_ms",
+          "value": -0.1687
+        },
+        {
+          "feature": "decline_ratio_1h",
+          "value": -0.2715
+        },
+        {
+          "feature": "amount_z_account",
+          "value": 0.4443
+        },
+        {
+          "feature": "correction_rate",
+          "value": -0.2919
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V003-002",
+      "vector_id": "V003",
+      "chain": [
+        "add_beneficiary",
+        "micro_test",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "add_beneficiary",
+        "micro_test"
+      ],
+      "score": 0.4541,
+      "level_scores": {
+        "transaction": 0.0644,
+        "session": 0.0055,
+        "graph": 0.369
+      },
+      "top_shap": [
+        {
+          "feature": "correction_rate",
+          "value": 0.0103
+        },
+        {
+          "feature": "device_geo_delta_km",
+          "value": -0.4886
+        },
+        {
+          "feature": "amount_z_account",
+          "value": -0.877
+        },
+        {
+          "feature": "graph_passthrough_score",
+          "value": 0.5862
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V003-003",
+      "vector_id": "V003",
+      "chain": [
+        "add_beneficiary",
+        "micro_test",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "add_beneficiary",
+        "micro_test",
+        "drain_single"
+      ],
+      "score": 0.2218,
+      "level_scores": {
+        "transaction": 0.4524,
+        "session": 0.005,
+        "graph": 0.2922
+      },
+      "top_shap": [
+        {
+          "feature": "confirm_dwell_ms",
+          "value": -0.0181
+        },
+        {
+          "feature": "beneficiary_age_minutes",
+          "value": 0.2787
+        },
+        {
+          "feature": "device_geo_delta_km",
+          "value": 0.0854
+        },
+        {
+          "feature": "amount_z_account",
+          "value": -0.3797
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V003-004",
+      "vector_id": "V003",
+      "chain": [
+        "add_beneficiary",
+        "micro_test",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "add_beneficiary",
+        "micro_test"
+      ],
+      "score": 0.2252,
+      "level_scores": {
+        "transaction": 0.2808,
+        "session": 0.1561,
+        "graph": 0.1627
+      },
+      "top_shap": [
+        {
+          "feature": "beneficiary_age_minutes",
+          "value": 0.0464
+        },
+        {
+          "feature": "graph_passthrough_score",
+          "value": 0.5934
+        },
+        {
+          "feature": "decline_ratio_1h",
+          "value": -0.1682
+        },
+        {
+          "feature": "device_geo_delta_km",
+          "value": -0.6832
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V003-005",
+      "vector_id": "V003",
+      "chain": [
+        "add_beneficiary",
+        "micro_test",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "add_beneficiary",
+        "micro_test",
+        "drain_single"
+      ],
+      "score": 0.3093,
+      "level_scores": {
+        "transaction": 0.2827,
+        "session": 0.3068,
+        "graph": 0.0091
+      },
+      "top_shap": [
+        {
+          "feature": "decline_ratio_1h",
+          "value": 0.339
+        },
+        {
+          "feature": "beneficiary_age_minutes",
+          "value": -0.1271
+        },
+        {
+          "feature": "confirm_dwell_ms",
+          "value": -0.119
+        },
+        {
+          "feature": "session_cadence_cv",
+          "value": -0.0295
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V004-000",
+      "vector_id": "V004",
+      "chain": [
+        "clone_voice_otp",
+        "register_device",
+        "provision_token",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "clone_voice_otp",
+        "register_device"
+      ],
+      "score": 0.2708,
+      "level_scores": {
+        "transaction": 0.3561,
+        "session": 0.4665,
+        "graph": 0.3147
+      },
+      "top_shap": [
+        {
+          "feature": "amount_z_account",
+          "value": -1.0619
+        },
+        {
+          "feature": "decline_ratio_1h",
+          "value": -0.8475
+        },
+        {
+          "feature": "graph_passthrough_score",
+          "value": -0.0799
+        },
+        {
+          "feature": "correction_rate",
+          "value": 0.6115
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V004-001",
+      "vector_id": "V004",
+      "chain": [
+        "clone_voice_otp",
+        "register_device",
+        "provision_token",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "clone_voice_otp",
+        "register_device",
+        "provision_token"
+      ],
+      "score": 0.405,
+      "level_scores": {
+        "transaction": 0.0145,
+        "session": 0.1982,
+        "graph": 0.1814
+      },
+      "top_shap": [
+        {
+          "feature": "device_geo_delta_km",
+          "value": 0.0991
+        },
+        {
+          "feature": "payee_paste_ratio",
+          "value": 0.5576
+        },
+        {
+          "feature": "fanout_degree_24h",
+          "value": 0.1877
+        },
+        {
+          "feature": "graph_passthrough_score",
+          "value": 0.509
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V004-002",
+      "vector_id": "V004",
+      "chain": [
+        "clone_voice_otp",
+        "register_device",
+        "provision_token",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "clone_voice_otp",
+        "register_device"
+      ],
+      "score": 0.4794,
+      "level_scores": {
+        "transaction": 0.1387,
+        "session": 0.5045,
+        "graph": 0.189
+      },
+      "top_shap": [
+        {
+          "feature": "fanout_degree_24h",
+          "value": 0.2102
+        },
+        {
+          "feature": "beneficiary_age_minutes",
+          "value": -0.4485
+        },
+        {
+          "feature": "device_geo_delta_km",
+          "value": -0.6583
+        },
+        {
+          "feature": "session_cadence_cv",
+          "value": 0.3885
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V004-003",
+      "vector_id": "V004",
+      "chain": [
+        "clone_voice_otp",
+        "register_device",
+        "provision_token",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "clone_voice_otp",
+        "register_device",
+        "provision_token"
+      ],
+      "score": 0.1208,
+      "level_scores": {
+        "transaction": 0.3469,
+        "session": 0.158,
+        "graph": 0.1605
+      },
+      "top_shap": [
+        {
+          "feature": "graph_passthrough_score",
+          "value": -0.0515
+        },
+        {
+          "feature": "confirm_dwell_ms",
+          "value": -0.1286
+        },
+        {
+          "feature": "correction_rate",
+          "value": -0.6399
+        },
+        {
+          "feature": "session_cadence_cv",
+          "value": -0.8311
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V004-004",
+      "vector_id": "V004",
+      "chain": [
+        "clone_voice_otp",
+        "register_device",
+        "provision_token",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "clone_voice_otp",
+        "register_device"
+      ],
+      "score": 0.3813,
+      "level_scores": {
+        "transaction": 0.3814,
+        "session": 0.5597,
+        "graph": 0.0875
+      },
+      "top_shap": [
+        {
+          "feature": "device_geo_delta_km",
+          "value": -0.0252
+        },
+        {
+          "feature": "fanout_degree_24h",
+          "value": -0.8335
+        },
+        {
+          "feature": "payee_paste_ratio",
+          "value": 0.3962
+        },
+        {
+          "feature": "confirm_dwell_ms",
+          "value": 0.3049
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V004-005",
+      "vector_id": "V004",
+      "chain": [
+        "clone_voice_otp",
+        "register_device",
+        "provision_token",
+        "drain_single"
+      ],
+      "primitives_present": [
+        "clone_voice_otp",
+        "register_device",
+        "provision_token"
+      ],
+      "score": 0.2361,
+      "level_scores": {
+        "transaction": 0.4768,
+        "session": 0.0555,
+        "graph": 0.3907
+      },
+      "top_shap": [
+        {
+          "feature": "session_cadence_cv",
+          "value": -0.3685
+        },
+        {
+          "feature": "correction_rate",
+          "value": -0.3004
+        },
+        {
+          "feature": "beneficiary_age_minutes",
+          "value": -0.5187
+        },
+        {
+          "feature": "device_geo_delta_km",
+          "value": -0.3887
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V005-000",
+      "vector_id": "V005",
+      "chain": [
+        "synthesise_identity",
+        "deepfake_kyc",
+        "open_mule_account",
+        "structured_withdrawal"
+      ],
+      "primitives_present": [
+        "synthesise_identity",
+        "deepfake_kyc"
+      ],
+      "score": 0.299,
+      "level_scores": {
+        "transaction": 0.138,
+        "session": 0.2104,
+        "graph": 0.0354
+      },
+      "top_shap": [
+        {
+          "feature": "amount_z_account",
+          "value": -0.5138
+        },
+        {
+          "feature": "session_cadence_cv",
+          "value": -0.0393
+        },
+        {
+          "feature": "beneficiary_age_minutes",
+          "value": -0.6455
+        },
+        {
+          "feature": "graph_passthrough_score",
+          "value": -0.155
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V005-001",
+      "vector_id": "V005",
+      "chain": [
+        "synthesise_identity",
+        "deepfake_kyc",
+        "open_mule_account",
+        "structured_withdrawal"
+      ],
+      "primitives_present": [
+        "synthesise_identity",
+        "deepfake_kyc",
+        "open_mule_account"
+      ],
+      "score": 0.3262,
+      "level_scores": {
+        "transaction": 0.1991,
+        "session": 0.0933,
+        "graph": 0.2046
+      },
+      "top_shap": [
+        {
+          "feature": "amount_z_account",
+          "value": 0.0368
+        },
+        {
+          "feature": "decline_ratio_1h",
+          "value": 0.3109
+        },
+        {
+          "feature": "device_geo_delta_km",
+          "value": -0.6041
+        },
+        {
+          "feature": "graph_passthrough_score",
+          "value": -0.608
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V005-002",
+      "vector_id": "V005",
+      "chain": [
+        "synthesise_identity",
+        "deepfake_kyc",
+        "open_mule_account",
+        "structured_withdrawal"
+      ],
+      "primitives_present": [
+        "synthesise_identity",
+        "deepfake_kyc"
+      ],
+      "score": 0.3574,
+      "level_scores": {
+        "transaction": 0.483,
+        "session": 0.3494,
+        "graph": 0.1566
+      },
+      "top_shap": [
+        {
+          "feature": "confirm_dwell_ms",
+          "value": -0.5074
+        },
+        {
+          "feature": "amount_z_account",
+          "value": -0.0335
+        },
+        {
+          "feature": "payee_paste_ratio",
+          "value": -0.0786
+        },
+        {
+          "feature": "correction_rate",
+          "value": -0.3157
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V005-003",
+      "vector_id": "V005",
+      "chain": [
+        "synthesise_identity",
+        "deepfake_kyc",
+        "open_mule_account",
+        "structured_withdrawal"
+      ],
+      "primitives_present": [
+        "synthesise_identity",
+        "deepfake_kyc",
+        "open_mule_account"
+      ],
+      "score": 0.348,
+      "level_scores": {
+        "transaction": 0.1646,
+        "session": 0.402,
+        "graph": 0.1251
+      },
+      "top_shap": [
+        {
+          "feature": "device_geo_delta_km",
+          "value": -0.1573
+        },
+        {
+          "feature": "graph_passthrough_score",
+          "value": 0.6132
+        },
+        {
+          "feature": "fanout_degree_24h",
+          "value": 0.4454
+        },
+        {
+          "feature": "payee_paste_ratio",
+          "value": -0.2428
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V005-004",
+      "vector_id": "V005",
+      "chain": [
+        "synthesise_identity",
+        "deepfake_kyc",
+        "open_mule_account",
+        "structured_withdrawal"
+      ],
+      "primitives_present": [
+        "synthesise_identity",
+        "deepfake_kyc"
+      ],
+      "score": 0.2685,
+      "level_scores": {
+        "transaction": 0.3869,
+        "session": 0.0454,
+        "graph": 0.0798
+      },
+      "top_shap": [
+        {
+          "feature": "graph_passthrough_score",
+          "value": 0.4762
+        },
+        {
+          "feature": "fanout_degree_24h",
+          "value": 0.1702
+        },
+        {
+          "feature": "confirm_dwell_ms",
+          "value": 0.0028
+        },
+        {
+          "feature": "session_cadence_cv",
+          "value": 0.1748
+        }
+      ],
+      "evasion_hypothesis": null
+    },
+    {
+      "instance_id": "g2-V005-005",
+      "vector_id": "V005",
+      "chain": [
+        "synthesise_identity",
+        "deepfake_kyc",
+        "open_mule_account",
+        "structured_withdrawal"
+      ],
+      "primitives_present": [
+        "synthesise_identity",
+        "deepfake_kyc",
+        "open_mule_account"
+      ],
+      "score": 0.4804,
+      "level_scores": {
+        "transaction": 0.4022,
+        "session": 0.3248,
+        "graph": 0.2028
+      },
+      "top_shap": [
+        {
+          "feature": "payee_paste_ratio",
+          "value": 0.459
+        },
+        {
+          "feature": "amount_z_account",
+          "value": -0.476
+        },
+        {
+          "feature": "confirm_dwell_ms",
+          "value": -0.1064
+        },
+        {
+          "feature": "correction_rate",
+          "value": -0.7062
+        }
+      ],
+      "evasion_hypothesis": null
+    }
+  ],
+  "per_vector": [
+    {
+      "vector_id": "V001",
+      "n_instances": 40,
+      "n_detected": 34,
+      "detection_rate": 0.85,
+      "holdout": "none"
+    },
+    {
+      "vector_id": "V002",
+      "n_instances": 47,
+      "n_detected": 38,
+      "detection_rate": 0.8085,
+      "holdout": "none"
+    },
+    {
+      "vector_id": "V003",
+      "n_instances": 54,
+      "n_detected": 45,
+      "detection_rate": 0.8333,
+      "holdout": "none"
+    },
+    {
+      "vector_id": "V004",
+      "n_instances": 61,
+      "n_detected": 50,
+      "detection_rate": 0.8197,
+      "holdout": "none"
+    },
+    {
+      "vector_id": "V005",
+      "n_instances": 68,
+      "n_detected": 52,
+      "detection_rate": 0.7647,
+      "holdout": "none"
+    }
+  ]
+}

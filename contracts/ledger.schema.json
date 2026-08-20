@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ananyac9820/ai-defense-lab/contracts/ledger.schema.json",
+  "title": "ledger",
+  "description": "FROZEN CONTRACT v0. Output of Pillar 2 (Generate), input to Pillar 3 (Defend). Source: AI_Defense_Lab_Strategy.pdf S5.4, extended from three tables to six because S5.1's entity layer must be materialised for any history-dependent feature to exist. On disk the ledger is Parquet, one file per table; this schema defines the record shape and is enforced against the JSON fixtures and against a sample of every generated table.",
+  "type": "object",
+  "required": ["contract_version", "tables", "label_columns", "provenance_forbidden_columns"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": { "const": "0.1.0" },
+    "label_columns": {
+      "const": ["is_fraud", "vector_id", "chain_position", "generation", "label_is_mule", "label_is_synthetic_identity"],
+      "description": "Ground truth. Never permitted in a feature matrix. Asserted by tests/test_no_label_leakage.py."
+    },
+    "provenance_forbidden_columns": {
+      "const": ["row_source", "generator_version"],
+      "description": "Columns that would identify which code path wrote a row. They do not exist in the ledger by construction (S5 single-source rule); the name list exists so the provenance test can assert their absence."
+    },
+    "tables": {
+      "type": "object",
+      "required": ["accounts", "devices", "merchants", "transactions", "sessions", "graph_edges"],
+      "additionalProperties": false,
+      "properties": {
+        "accounts": { "type": "array", "items": { "$ref": "#/$defs/account" } },
+        "devices": { "type": "array", "items": { "$ref": "#/$defs/device" } },
+        "merchants": { "type": "array", "items": { "$ref": "#/$defs/merchant" } },
+        "transactions": { "type": "array", "items": { "$ref": "#/$defs/transaction" } },
+        "sessions": { "type": "array", "items": { "$ref": "#/$defs/session" } },
+        "graph_edges": { "type": "array", "items": { "$ref": "#/$defs/graph_edge" } }
+      }
+    }
+  },
+  "$defs": {
+    "account": {
+      "type": "object",
+      "required": ["account_id", "opened_at", "home_geo", "segment", "kyc_level", "label_is_mule", "label_is_synthetic_identity"],
+      "additionalProperties": false,
+      "properties": {
+        "account_id": { "type": "string", "pattern": "^A[0-9]{8}$" },
+        "opened_at": { "type": "string", "format": "date-time" },
+        "home_geo": { "type": "string", "description": "City-level geography code, e.g. IN-MH-PUNE." },
+        "segment": { "enum": ["retail_low", "retail_mid", "retail_high", "sme", "merchant_settlement"] },
+        "kyc_level": { "enum": ["full", "min", "video"] },
+        "label_is_mule": { "type": "boolean" },
+        "label_is_synthetic_identity": { "type": "boolean" }
+      }
+    },
+    "device": {
+      "type": "object",
+      "required": ["device_id", "first_seen", "os_family", "is_emulator"],
+      "additionalProperties": false,
+      "properties": {
+        "device_id": { "type": "string", "pattern": "^D[0-9]{8}$" },
+        "first_seen": { "type": "string", "format": "date-time" },
+        "os_family": { "enum": ["android", "ios", "web", "agent"] },
+        "is_emulator": { "type": "boolean" }
+      }
+    },
+    "merchant": {
+      "type": "object",
+      "required": ["merchant_id", "onboarded_at", "mcc", "geo", "risk_tier"],
+      "additionalProperties": false,
+      "properties": {
+        "merchant_id": { "type": "string", "pattern": "^M[0-9]{6}$" },
+        "onboarded_at": { "type": "string", "format": "date-time" },
+        "mcc": { "type": "string", "pattern": "^[0-9]{4}$" },
+        "geo": { "type": "string" },
+        "risk_tier": { "enum": ["low", "medium", "high"] }
+      }
+    },
+    "transaction": {
+      "type": "object",
+      "required": [
+        "transaction_id", "account_id", "device_id", "merchant_id", "session_id",
+        "timestamp", "amount_inr", "channel", "geography", "mcc", "auth_result",
+        "is_fraud", "vector_id", "chain_position", "generation"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "transaction_id": { "type": "string", "pattern": "^T[0-9]{10}$" },
+        "account_id": { "type": "string", "pattern": "^A[0-9]{8}$" },
+        "device_id": { "type": "string", "pattern": "^D[0-9]{8}$" },
+        "merchant_id": { "type": ["string", "null"], "pattern": "^M[0-9]{6}$" },
+        "session_id": { "type": ["string", "null"], "pattern": "^S[0-9]{10}$" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "amount_inr": { "type": "number", "exclusiveMinimum": 0 },
+        "channel": { "enum": ["cards_cnp", "upi_instant", "wallets_tokenisation", "bank_transfer", "merchant_payouts", "kyc_onboarding", "agentic_commerce"] },
+        "geography": { "type": "string" },
+        "mcc": { "type": "string", "pattern": "^[0-9]{4}$" },
+        "auth_result": { "enum": ["approved", "declined", "pending"] },
+        "is_fraud": { "type": "boolean" },
+        "vector_id": { "type": ["string", "null"], "pattern": "^V[0-9]{3}$" },
+        "chain_position": { "type": ["integer", "null"], "minimum": 0 },
+        "generation": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "session": {
+      "type": "object",
+      "required": [
+        "session_id", "account_id", "device_id", "started_at", "channel",
+        "events", "outcome", "is_fraud", "vector_id", "chain_position", "generation"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "session_id": { "type": "string", "pattern": "^S[0-9]{10}$" },
+        "account_id": { "type": "string", "pattern": "^A[0-9]{8}$" },
+        "device_id": { "type": "string", "pattern": "^D[0-9]{8}$" },
+        "started_at": { "type": "string", "format": "date-time" },
+        "channel": { "enum": ["cards_cnp", "upi_instant", "wallets_tokenisation", "bank_transfer", "merchant_payouts", "kyc_onboarding", "agentic_commerce"] },
+        "events": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/session_event" } },
+        "outcome": { "enum": ["completed", "abandoned", "blocked", "stepped_up"] },
+        "is_fraud": { "type": "boolean" },
+        "vector_id": { "type": ["string", "null"], "pattern": "^V[0-9]{3}$" },
+        "chain_position": { "type": ["integer", "null"], "minimum": 0 },
+        "generation": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "session_event": {
+      "type": "object",
+      "description": "Carries the two non-obvious detection signals agreed in NOTES.md D-004. Signal A (coercion signature) is read from input_method, dwell_ms and corrections. Signal B (cadence regularity) is derived from t_offset_ms alone. These fields exist ONLY here and never on transactions, so that the transaction-level baseline cannot see them and the ablation stays honest.",
+      "required": ["type", "t_offset_ms"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "enum": ["app_open", "login", "nav", "view_balance", "add_payee", "field_input", "otp_entry", "confirm", "submit", "decline_shown", "dispute_open", "agent_action"] },
+        "t_offset_ms": { "type": "integer", "minimum": 0, "description": "Milliseconds since started_at. Signal B derives inter-arrival CV and entropy from this series." },
+        "screen": { "type": ["string", "null"] },
+        "field": { "type": ["string", "null"], "description": "payee_id, amount, otp, note - present on field_input events." },
+        "input_method": { "enum": ["type", "paste", "autofill", "none", null], "description": "Signal A: paste-vs-type ratio on payee and amount fields." },
+        "dwell_ms": { "type": ["integer", "null"], "minimum": 0, "description": "Signal A: time spent on the field or screen before acting. Long dwell before confirm is the coercion tell." },
+        "corrections": { "type": ["integer", "null"], "minimum": 0, "description": "Signal A: backspace or edit count within the field." }
+      }
+    },
+    "graph_edge": {
+      "type": "object",
+      "required": ["source_account", "target_account", "timestamp", "amount_inr", "edge_type"],
+      "additionalProperties": false,
+      "properties": {
+        "source_account": { "type": "string", "pattern": "^A[0-9]{8}$" },
+        "target_account": { "type": "string", "pattern": "^A[0-9]{8}$" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "amount_inr": { "type": "number", "minimum": 0 },
+        "edge_type": { "enum": ["transfer", "shared_device", "shared_beneficiary", "settlement", "token_provision"] },
+        "transaction_id": { "type": ["string", "null"], "pattern": "^T[0-9]{10}$" }
+      }
+    }
+  }
+}

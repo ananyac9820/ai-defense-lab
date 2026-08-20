@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ananyac9820/ai-defense-lab/contracts/attacks.schema.json",
+  "title": "attacks.json",
+  "description": "FROZEN CONTRACT v0. Output of Pillar 1 (Identify), input to the Simulator. Source: AI_Defense_Lab_Strategy.pdf S4.4, plus three additions agreed 2026-08-20 (source as object, expected_levels, holdout).",
+  "type": "object",
+  "required": ["contract_version", "generated_at", "grammar_version", "vectors"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": { "const": "0.1.0" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "grammar_version": { "type": "string" },
+    "vectors": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/vector" }
+    }
+  },
+  "$defs": {
+    "vector": {
+      "type": "object",
+      "required": [
+        "vector_id", "name", "channel", "ai_capability", "objective",
+        "chain", "data_signature", "parameters", "source",
+        "expected_levels", "holdout", "generation"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "vector_id": {
+          "type": "string",
+          "pattern": "^V[0-9]{3}$",
+          "description": "Stable identifier. Never reused, never renumbered."
+        },
+        "name": { "type": "string", "minLength": 3, "maxLength": 80 },
+        "channel": {
+          "enum": ["cards_cnp", "upi_instant", "wallets_tokenisation", "bank_transfer", "merchant_payouts", "kyc_onboarding", "agentic_commerce"]
+        },
+        "ai_capability": {
+          "enum": ["voice_cloning", "deepfake_video", "llm_text_generation", "synthetic_identity", "agentic_automation", "document_forgery", "agent_impersonation"]
+        },
+        "objective": {
+          "enum": ["credential_capture", "account_takeover", "authorised_push_payment", "new_account_fraud", "laundering_layering", "refund_chargeback_abuse", "intent_forgery"]
+        },
+        "chain": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 8,
+          "items": { "type": "string" },
+          "description": "Ordered primitive names. Must exist in contracts/grammar.json and satisfy its composition_rules. Enforced by validate_chain(), not by this schema."
+        },
+        "data_signature": {
+          "type": "string",
+          "minLength": 20,
+          "description": "Prose description of the observable footprint. This is what the detector is expected to see."
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Sampling ranges the simulator draws from. Keys are primitive-specific.",
+          "minProperties": 1,
+          "additionalProperties": {
+            "oneOf": [
+              { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" }, "description": "[lo, hi] numeric range" },
+              { "type": "array", "minItems": 1, "items": { "type": "string" }, "description": "categorical choices" },
+              { "type": "number" },
+              { "type": "string" },
+              { "type": "boolean" }
+            ]
+          }
+        },
+        "source": {
+          "type": "object",
+          "description": "Real cited incident grounding this vector. Rendered as a card in the prototype, so it must be an object and not a bare string.",
+          "required": ["case", "citation_url", "doc_ref"],
+          "additionalProperties": false,
+          "properties": {
+            "case": { "type": "string", "minLength": 10, "description": "One-line description of the real incident." },
+            "stat": { "type": ["string", "null"], "description": "Headline figure, e.g. 'USD 25.6M', 'INR 21,367 crore'." },
+            "citation_url": { "type": "string", "format": "uri" },
+            "doc_ref": {
+              "type": "string",
+              "description": "Where in the supplied source documents this came from, e.g. '33_AI_Era_Frauds #16' or 'Research_Backed_Plan S2'."
+            },
+            "regulator_advisory": {
+              "type": ["string", "null"],
+              "description": "RBI / NPCI / CERT-In reference where one exists. PDF S4.3 prioritises these over news coverage."
+            }
+          }
+        },
+        "expected_levels": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": { "enum": ["transaction", "session", "graph"] },
+          "description": "Which detector level is predicted to catch this. Stated in advance so the S6.1 ablation tests a prediction rather than narrating a result."
+        },
+        "holdout": {
+          "enum": ["none", "family", "composition"],
+          "description": "family = whole vector withheld from training (S6.3). composition = chain built from seen primitives in an unseen order."
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "0 for hand-authored. Incremented by the red-team strategist."
+        },
+        "parent_vector_id": {
+          "type": ["string", "null"],
+          "pattern": "^V[0-9]{3}$",
+          "description": "Set when produced by mutation of an existing vector."
+        },
+        "mutation_mode": {
+          "enum": ["recomposition", "parameter_drift", null],
+          "description": "Which S7.1 mutation mode produced this vector."
+        },
+        "narrative": {
+          "type": ["string", "null"],
+          "description": "LLM-authored scenario text. Presentation and feature layer only (S5.1) - never the source of a number."
+        }
+      }
+    }
+  }
+}
