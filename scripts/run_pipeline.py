@@ -21,6 +21,7 @@ Three things this script is careful about, all of them things a judge can ask ab
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 from datetime import datetime, timezone
@@ -206,10 +207,27 @@ def main(argv: list[str] | None = None) -> int:
 
     attacks = json.loads((FIXTURES_DIR / "attacks.fixture.json").read_text(encoding="utf-8"))
     held_out = {v["vector_id"] for v in attacks["vectors"] if v["holdout"] == "family"}
-    seen_vectors = {v["vector_id"] for v in attacks["vectors"]} - held_out
+    held_comp = {v["vector_id"] for v in attacks["vectors"] if v["holdout"] == "composition"}
+    withheld = held_out | held_comp
+    seen_vectors = {v["vector_id"] for v in attacks["vectors"]} - withheld
 
     print("=" * 74)
-    cache_dir = ARTIFACTS_DIR / "ledger_cache" / f"{seed}-{args.transactions}-{args.accounts}"
+    # The cache key has to cover the attack set, not just the seed and the size. It did
+    # not, and the first run after three new vectors were added silently reused a ledger
+    # generated before they existed: the held-out families were simply absent and the
+    # evaluation reported on the wrong experiment. Stale-cache bugs produce numbers for
+    # code you did not run, which is the worst failure mode available to this project.
+    attacks_digest = hashlib.sha256(
+        json.dumps(
+            [(v["vector_id"], v["chain"], v.get("parameters"), v.get("holdout"))
+             for v in attacks["vectors"]],
+            sort_keys=True,
+        ).encode()
+    ).hexdigest()[:10]
+    cache_dir = (
+        ARTIFACTS_DIR / "ledger_cache"
+        / f"{seed}-{args.transactions}-{args.accounts}-{attacks_digest}"
+    )
     if args.cache_ledger and (cache_dir / "transactions.parquet").exists():
         print(f"simulate (cached: {cache_dir.name})")
         ledger = load_cached_ledger(cache_dir)
@@ -237,11 +255,13 @@ def main(argv: list[str] | None = None) -> int:
     # PDF S6.3. Held-out families never appear in training at all. Legitimate traffic is
     # untouched; only the fraudulent rows of those vectors are withheld.
     train_all, test_all = split.train, split.test
-    train = train_all[(train_all["is_fraud"] == 0) | (~train_all["vector_id"].isin(held_out))]
+    train = train_all[(train_all["is_fraud"] == 0) | (~train_all["vector_id"].isin(withheld))]
     seen_test = test_all[(test_all["is_fraud"] == 0) | (test_all["vector_id"].isin(seen_vectors))]
     unseen_test = test_all[(test_all["is_fraud"] == 0) | (test_all["vector_id"].isin(held_out))]
+    comp_test = test_all[(test_all["is_fraud"] == 0) | (test_all["vector_id"].isin(held_comp))]
 
-    print(f"  held-out families: {sorted(held_out) or 'none'}")
+    print(f"  held-out families:     {sorted(held_out) or 'none'}")
+    print(f"  held-out compositions: {sorted(held_comp) or 'none'}")
     print(f"  train       {len(train):>8,} rows, {int(train['is_fraud'].sum()):>5} fraud")
     print(f"  seen test   {len(seen_test):>8,} rows, {int(seen_test['is_fraud'].sum()):>5} fraud")
     print(f"  unseen test {len(unseen_test):>8,} rows, {int(unseen_test['is_fraud'].sum()):>5} fraud")
@@ -252,6 +272,8 @@ def main(argv: list[str] | None = None) -> int:
     amounts_seen = seen_test["amount_inr"].to_numpy()
     y_unseen = unseen_test["is_fraud"].to_numpy()
     amounts_unseen = unseen_test["amount_inr"].to_numpy()
+    y_comp = comp_test["is_fraud"].to_numpy()
+    amounts_comp = comp_test["amount_inr"].to_numpy()
 
     txn_cols = list(cfg["baseline"]["features"])
 
@@ -290,6 +312,8 @@ def main(argv: list[str] | None = None) -> int:
     ablation: list[dict[str, Any]] = []
     headline: dict[str, Any] | None = None
     headline_unseen: dict[str, Any] | None = None
+    headline_comp: dict[str, Any] | None = None
+    comp_scores = np.array([])
     headline_fit = None
     headline_threshold = 0.5
     distribution: dict[str, Any] = {}
@@ -320,6 +344,15 @@ def main(argv: list[str] | None = None) -> int:
             )
             add_lift(headline_unseen, baseline_metrics)
 
+            comp_scores = fitted.model.predict_proba(
+                comp_test.reindex(columns=columns).to_numpy(dtype=np.float64, na_value=np.nan)
+            )[:, 1]
+            headline_comp = compute_metrics(
+                y_comp, comp_scores, threshold,
+                review_cost_inr=review_cost, amounts=amounts_comp,
+            )
+            add_lift(headline_comp, baseline_metrics)
+
     assert headline is not None and headline_fit is not None and headline_unseen is not None
 
     print("\nresults, evaluated on the unmodified distribution")
@@ -330,7 +363,11 @@ def main(argv: list[str] | None = None) -> int:
     for row in ablation:
         print(format_table(row["variant"], row["metrics"]))
     print("-" * 74)
-    print(format_table("all_levels on HELD-OUT families", headline_unseen))
+    print(format_table("HELD-OUT families (novel extraction)", headline_unseen))
+    if headline_comp and headline_comp["prevalence"] > 0:
+        print(format_table("HELD-OUT compositions (seen prims)", headline_comp))
+    elif headline_comp:
+        print("HELD-OUT compositions        no instances in the test window at this scale")
     print("-" * 74)
     print(f"operating threshold {headline_threshold:.6f}, chosen on train by net value")
 
@@ -349,6 +386,10 @@ def main(argv: list[str] | None = None) -> int:
         y_unseen, unseen_scores, unseen_test["instance_id"].to_numpy(),
         unseen_test["vector_id"].to_numpy(), headline_threshold,
     )
+    comp_recall, comp_per_vector, _ = instance_detection(
+        y_comp, comp_scores, comp_test["instance_id"].to_numpy(),
+        comp_test["vector_id"].to_numpy(), headline_threshold,
+    )
     per_vector_rows = per_vector_row_detection(
         y_seen, headline_fit.scores_test, seen_test["vector_id"].to_numpy(), headline_threshold
     )
@@ -366,8 +407,14 @@ def main(argv: list[str] | None = None) -> int:
         row["holdout"] = "family"
         print(f"  {row['vector_id']}  {row['n_detected']:>4}/{row['n_instances']:<4} instances "
               f"{row['detection_rate']:>6.1%}   HELD OUT, never trained on")
-    print(f"  UNSEEN instance recall {unseen_recall:.1%} over "
+    print(f"  UNSEEN-FAMILY instance recall {unseen_recall:.1%} over "
           f"{sum(r['n_instances'] for r in unseen_per_vector)} instances")
+    for row in comp_per_vector:
+        row["holdout"] = "composition"
+        print(f"  {row['vector_id']}  {row['n_detected']:>4}/{row['n_instances']:<4} instances "
+              f"{row['detection_rate']:>6.1%}   HELD OUT composition")
+    print(f"  UNSEEN-COMPOSITION instance recall {comp_recall:.1%} over "
+          f"{sum(r['n_instances'] for r in comp_per_vector)} instances")
 
     missed_set = set(missed_instances)
     test_instances = seen_test["instance_id"].to_numpy()
@@ -403,7 +450,7 @@ def main(argv: list[str] | None = None) -> int:
             }
             for pos, shap in zip(missed[:400], shap_rows)
         ],
-        "per_vector": per_vector + unseen_per_vector,
+        "per_vector": per_vector + unseen_per_vector + comp_per_vector,
     }
     validate("misses", misses_payload)
 
@@ -434,6 +481,11 @@ def main(argv: list[str] | None = None) -> int:
             "n_fraud": int(ledger.transactions["is_fraud"].sum()),
             "metrics_seen": headline,
             "metrics_unseen": headline_unseen,
+            # Only reported when the composition holdout actually landed instances in the
+            # test window. An empty holdout has prevalence zero, and a metrics object at
+            # zero prevalence describes nothing.
+            **({"metrics_unseen_composition": headline_comp}
+               if headline_comp and headline_comp["prevalence"] > 0 else {}),
             "ablation": ablation,
             "detection_rate": round(instance_recall, 4),
             "n_chains_proposed": 0,

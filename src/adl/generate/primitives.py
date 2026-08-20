@@ -55,6 +55,19 @@ class ChainContext:
     def amount(self, mcc: str, factor: tuple[float, float]) -> float:
         return self.world.amount(self.trait, mcc, factor) * self.scale
 
+    def blend_mcc(self, default: str, p: float = 0.55) -> str:
+        """Extract through a category the victim already uses, most of the time.
+
+        Extraction was always routed through the same two or three merchant categories
+        regardless of who the victim was, which made category a partial giveaway on its
+        own. An attacker draining an account has every reason to move value through
+        somewhere the account already transacts. This narrows the gap between fraudulent
+        and legitimate rows without touching either behavioural signal.
+        """
+        if self.trait.mcc_pref and self.rng.random() < p:
+            return str(self.rng.choice(self.trait.mcc_pref))
+        return default
+
     def txn(self, **kwargs: Any) -> None:
         """Emit a transaction attributed to this chain instance."""
         defaults = {
@@ -279,11 +292,12 @@ def balance_probe(ctx: ChainContext) -> None:
 
 def drain_single(ctx: ChainContext) -> None:
     target = ctx.beneficiary or str(ctx.rng.choice(ctx.world.mule_pool))
-    amount = ctx.amount("6011", (2.0, 26.0))
+    mcc = ctx.blend_mcc("6011")
+    amount = ctx.amount(mcc, (2.0, 26.0))
     ctx.txn(
         amount=amount,
         channel="upi_instant" if ctx.rng.random() < 0.6 else "bank_transfer",
-        mcc="6011",
+        mcc=mcc,
         auth_result="declined" if ctx.world.declined else "approved",
     )
     if not ctx.world.declined:
@@ -303,7 +317,7 @@ def structured_withdrawal(ctx: ChainContext) -> None:
             return
         ctx.advance(30, 9 * 60)
         amount = (threshold - float(ctx.rng.uniform(*margin))) * ctx.scale
-        ctx.txn(amount=max(1.0, amount), channel="bank_transfer", mcc="6011")
+        ctx.txn(amount=max(1.0, amount), channel="bank_transfer", mcc=ctx.blend_mcc("6011"))
         ctx.edge(target, max(1.0, amount), "transfer")
 
 
