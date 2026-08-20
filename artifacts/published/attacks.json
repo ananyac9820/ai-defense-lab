@@ -193,7 +193,7 @@
         "transaction",
         "graph"
       ],
-      "holdout": "none",
+      "holdout": "family",
       "generation": 0,
       "parent_vector_id": null,
       "mutation_mode": null,

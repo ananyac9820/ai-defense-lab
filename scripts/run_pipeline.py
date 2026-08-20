@@ -98,6 +98,7 @@ def score_distribution(y: np.ndarray, scores: np.ndarray, threshold: float) -> d
         return {}
 
     legit_99 = float(np.percentile(legit, 99))
+    legit_99_9 = float(np.percentile(legit, 99.9))
     return {
         "n_fraud": int(len(fraud)),
         "fraud_p05": round(float(np.percentile(fraud, 5)), 4),
@@ -105,14 +106,18 @@ def score_distribution(y: np.ndarray, scores: np.ndarray, threshold: float) -> d
         "fraud_p95": round(float(np.percentile(fraud, 95)), 4),
         "legit_p50": round(float(np.percentile(legit, 50)), 6),
         "legit_p99": round(legit_99, 4),
-        "legit_p99_9": round(float(np.percentile(legit, 99.9)), 4),
+        "legit_p99_9": round(legit_99_9, 4),
         "threshold": round(float(threshold), 6),
         # The separation number. Near 1.0 means almost every fraudulent row outscores 99%
         # of legitimate traffic, which is the shape of an unrealistically clean attack.
         "fraud_above_legit_p99": round(float((fraud > legit_99).mean()), 4),
-        "fraud_within_2x_threshold": round(
-            float((fraud < threshold * 2).mean()) if threshold > 0 else 0.0, 4
-        ),
+        # Fraud inside the band where legitimate traffic still lives. These are the
+        # genuinely hard cases, and their absence is what an over-clean attack model
+        # looks like.
+        "fraud_in_overlap_band": round(float((fraud < legit_99_9).mean()), 4),
+        # Positive means an empty corridor between the top of legitimate traffic and the
+        # bottom of fraud. A wide one is a simulator artefact, not a detector achievement.
+        "separation_gap": round(float(np.percentile(fraud, 5) - legit_99_9), 4),
     }
 
 

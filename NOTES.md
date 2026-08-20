@@ -468,3 +468,81 @@ and held-out families, which are the next two items.
 
 The coercion signal still contributes nothing measurable. Removing it costs 0.001 AUC-PR.
 The cadence signal is the same. Both are starved of support at this scale.
+
+---
+
+# Full-scale run, 2M transactions (20 Aug 2026)
+
+1,998,721 transactions, 40,000 accounts, 19,410 fraudulent (0.971%), 936,500 sessions,
+384,175 graph edges. Test window prevalence 0.827%, 277 seen instances and 36 held-out
+instances. These are the first numbers in the project built on real sample sizes.
+
+| Variant | Precision | Recall | AUC-PR | Lift vs tuned baseline |
+|---|---|---|---|---|
+| BASELINE xgboost tuned, txn only | 0.372 | 0.830 | 0.801 | reference |
+| floor: logistic regression | 0.054 | 0.803 | 0.160 | -80% |
+| txn only | 0.761 | 0.774 | 0.829 | +4% |
+| txn + session | 0.759 | 0.847 | 0.886 | +11% |
+| **all three levels** | **0.997** | **0.806** | **0.977** | **+22%** |
+| all levels minus graph | 0.759 | 0.847 | 0.886 | +11% |
+| all levels minus coercion signal | 0.996 | 0.811 | 0.976 | +22% |
+| all levels minus cadence signal | 0.994 | 0.806 | 0.973 | +22% |
+
+Seen instance recall 88.1% over 277 instances. Per vector: V001 43/43, V002 126/157
+(80.2%), V003 52/54, V005 23/23. Mule layering is the weakest, which is the expected
+shape.
+
+## D-026 — The graph level is the result
+
++0.091 AUC-PR over transaction and session evidence combined, and precision from 0.759 to
+0.997 at a lower alert rate. `all_levels_minus_graph` reproduces `txn+session` to four
+decimal places again, which is the check that keeps the claim falsifiable.
+
+## D-027 — The held-out gap collapsed, and the earlier number was noise
+
+At 250k the held-out family scored AUC-PR 0.111 against 0.994 seen, on **one instance**.
+At 2M it scores **0.979 against 0.977 seen, on 36 instances** — the held-out family is
+detected slightly *better* than the families the detector trained on.
+
+The earlier gap was a sample-size artefact and should never have been treated as a
+finding. Recording that plainly because it was briefly the headline.
+
+**Why it generalises.** V004's chain is
+`clone_voice_otp -> register_device -> provision_token -> drain_single`. Three of its four
+primitives appear nowhere in training. The fourth, `drain_single`, is the extraction step
+and it is shared with every trained family.
+
+So the detector is not recognising attack families. It is recognising the **extraction
+footprint** — a large transfer to a novel beneficiary with a particular graph signature —
+and it does not care how the access was obtained. Holding out acquisition and
+establishment stages withholds nothing that the model was using.
+
+That is a genuine and defensible finding, and a more interesting one than a generalisation
+gap: fraud that moves money the same way is caught the same way. It also says the current
+held-out test is measuring the wrong thing.
+
+**What a real unseen test needs.** Hold out an *extraction* primitive so the money
+movement itself is novel, and hold out compositions as PDF S6.3 separately requires. Both
+are now cheap because chains execute generically.
+
+## D-028 — Separability at scale
+
+    fraud_p05             0.2212        legit_p99      0.0033
+    fraud_p50             1.0           legit_p99_9    0.1899
+    fraud_above_legit_p99 0.988         separation_gap +0.0313
+
+An overlap band exists now but is thin: under 5% of fraud scores below the 99.9th
+percentile of legitimate traffic. Seen instance recall at 88.1% is inside the agreed
+target band; `fraud_above_legit_p99` at 0.988 is above the 0.85-0.95 target.
+
+`fraud_within_2x_threshold` was removed. With the net-value threshold at 0.985 it read
+1.0 by construction and measured nothing. Replaced with `fraud_in_overlap_band` and
+`separation_gap`, both independent of where the threshold happens to sit.
+
+## D-029 — Coercion signal: negative finding confirmed at scale
+
+Removing it moves AUC-PR from 0.977 to 0.976 and *improves* F1 from 0.891 to 0.894. With
+1,420 fraudulent rows in the test window the signal now has real support, and it still
+contributes nothing. The cadence signal contributes 0.004 AUC-PR, which is inside noise.
+
+Reported as a negative result. No effect size has been touched at any point.
