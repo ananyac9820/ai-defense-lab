@@ -1,0 +1,4 @@
+# Normalise line endings so a config hash computed on Windows matches CI.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
