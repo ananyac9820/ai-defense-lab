@@ -182,7 +182,10 @@ VECTORS_GEN0 = [
             "regulator_advisory": None,
         },
         "expected_levels": ["transaction", "graph"],
-        "holdout": "none",
+        # Held out of training entirely (PDF S6.3). The detector never sees a SIM-swap
+        # takeover during fitting, so its performance here is evidence about
+        # generalisation rather than about memorisation.
+        "holdout": "family",
         "generation": 0,
         "parent_vector_id": None,
         "mutation_mode": None,

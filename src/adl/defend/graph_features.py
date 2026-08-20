@@ -108,22 +108,35 @@ def account_graph_state(edges: pd.DataFrame, window_hours: int = 24) -> pd.DataF
     inbound_frame = inbound_frame.assign(fanin=fanin_sorted, money_in=money_in_sorted)
 
     # For each edge, the source account's inbound state as of just before this edge.
-    inbound_lookup = inbound_frame.sort_values(["account", "t"], kind="stable")
-    src_names = src.astype(str).to_numpy()
-    fanin = np.zeros(len(e), dtype=np.float32)
-    money_in = np.zeros(len(e), dtype=np.float64)
-    last_in_time = np.full(len(e), np.nan)
+    # merge_asof is exactly "last value at or before, per key", which is what a causal
+    # graph feature is. The per-row Python loop this replaces was the reason a full-scale
+    # run took forty minutes.
+    inbound_state = (
+        inbound_frame.rename(columns={"account": "_acct"})
+        .sort_values("t", kind="stable")
+        .reset_index(drop=True)
+    )
+    probe = pd.DataFrame({"_acct": src.astype(str).to_numpy(), "t": times}).reset_index()
+    probe = probe.sort_values("t", kind="stable")
 
-    grouped = {name: group for name, group in inbound_lookup.groupby("account", sort=False)}
-    for i in range(len(e)):
-        group = grouped.get(src_names[i])
-        if group is None:
-            continue
-        pos = np.searchsorted(group["t"].to_numpy(), times[i], side="left") - 1
-        if pos >= 0:
-            fanin[i] = group["fanin"].to_numpy()[pos] + 1
-            money_in[i] = group["money_in"].to_numpy()[pos] + group["amount"].to_numpy()[pos]
-            last_in_time[i] = group["t"].to_numpy()[pos]
+    # merge_asof consumes the right frame's key, so the matched edge's own timestamp has
+    # to be carried across as a separate column or residence time silently becomes zero.
+    inbound_state = inbound_state.assign(t_in=inbound_state["t"])
+    joined = pd.merge_asof(
+        probe,
+        inbound_state[["_acct", "t", "t_in", "fanin", "money_in", "amount"]],
+        on="t",
+        by="_acct",
+        direction="backward",
+        allow_exact_matches=True,
+    ).sort_values("index")
+
+    fanin = np.nan_to_num(joined["fanin"].to_numpy(dtype=float), nan=-1.0) + 1.0
+    fanin = np.where(fanin < 0.5, 0.0, fanin).astype(np.float32)
+    money_in = np.nan_to_num(
+        joined["money_in"].to_numpy(dtype=float) + joined["amount"].to_numpy(dtype=float), nan=0.0
+    )
+    last_in_time = joined["t_in"].to_numpy(dtype=float)
 
     total = money_in + money_out
     with np.errstate(invalid="ignore", divide="ignore"):
@@ -212,29 +225,38 @@ def build_graph_features(ledger, transactions: pd.DataFrame) -> pd.DataFrame:  #
         out[column] = np.float32(0.0)
     out["g_residence_seconds"] = np.nan
 
-    by_account = {name: group for name, group in state.groupby("source_account", sort=False)}
-    state_times = {
-        name: group["timestamp"].astype("int64").to_numpy() for name, group in by_account.items()
-    }
+    carried = [
+        "g_fanin_24h",
+        "g_fanout_24h",
+        "g_degree_ratio",
+        "g_passthrough_score",
+        "g_residence_seconds",
+        "g_shared_device_degree",
+    ]
 
-    carried = ["g_fanin_24h", "g_fanout_24h", "g_degree_ratio", "g_passthrough_score",
-               "g_residence_seconds", "g_shared_device_degree"]
-    values = {c: np.zeros(len(transactions), dtype=np.float32) for c in carried}
-    values["g_residence_seconds"][:] = np.nan
+    # Same join, same reason: the last graph state for this account strictly before this
+    # transaction. Nothing here may see an edge that had not happened yet.
+    left = pd.DataFrame({
+        "_acct": txn_accounts,
+        "t": txn_times,
+        "_row": np.arange(len(transactions)),
+    }).sort_values("t", kind="stable")
 
-    for i in range(len(transactions)):
-        group = by_account.get(txn_accounts[i])
-        if group is None:
-            continue
-        pos = np.searchsorted(state_times[txn_accounts[i]], txn_times[i], side="right") - 1
-        if pos < 0:
-            continue
-        row = group.iloc[pos]
-        for c in carried:
-            values[c][i] = row[c]
+    right = (
+        state.assign(_acct=state["source_account"], t=state["timestamp"].astype("int64"))
+        .sort_values("t", kind="stable")[["_acct", "t", *carried]]
+        .reset_index(drop=True)
+    )
 
-    for c in carried:
-        out[c] = values[c]
+    joined = pd.merge_asof(
+        left, right, on="t", by="_acct", direction="backward", allow_exact_matches=True
+    ).sort_values("_row")
+
+    for column in carried:
+        values = joined[column].to_numpy(dtype=float)
+        out[column] = (
+            values if column == "g_residence_seconds" else np.nan_to_num(values, nan=0.0)
+        ).astype(np.float32)
 
     out["g_in_short_cycle"] = np.isin(txn_accounts, list(on_cycle)).astype(np.float32)
 

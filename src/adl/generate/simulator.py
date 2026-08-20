@@ -481,11 +481,45 @@ class World:
     _all_merchants: list[dict[str, str]] = field(default_factory=list)
     instance_seq: int = 0
     instance_id: str = "I000000"
+    abort_after: int = 99
+    slow: bool = False
+    restraint: float = 1.0
+    declined: bool = False
 
     def new_instance(self) -> str:
+        """Start an instance and draw the execution profile it will be run with.
+
+        Not every attack is executed well. Drawing an abort point, a pace and a restraint
+        factor per instance is what stops the fraud population being uniformly the
+        attacker's best case, which is the state the first score distribution revealed:
+        99.3% of fraudulent rows above the 99th percentile of legitimate traffic, with an
+        empty band beneath them.
+        """
         self.instance_seq += 1
         self.instance_id = f"I{self.instance_seq:06d}"
+
+        r = self.cfg["simulation"].get("realism", {})
+        if not r.get("enabled", False):
+            self.abort_after = 99
+            self.slow = False
+            self.restraint = 1.0
+            self.declined = False
+            return self.instance_id
+
+        # Geometric abort: each remaining stage is another chance to stop.
+        p = float(r["p_abort_per_stage"])
+        stage = 1
+        while stage < 6 and self.rng.random() > p:
+            stage += 1
+        self.abort_after = stage
+        self.slow = bool(self.rng.random() < float(r["p_slow_actor"]))
+        self.declined = bool(self.rng.random() < float(r["p_declined_extraction"]))
+        self.restraint = float(self.rng.uniform(*r["amount_restraint"]))
         return self.instance_id
+
+    def aborted(self, stage: int) -> bool:
+        """True when this instance stopped before reaching ``stage``."""
+        return stage > self.abort_after
 
     def amount(self, trait: AccountTrait, mcc: str, factor: tuple[float, float]) -> float:
         """An attack amount expressed relative to what this account normally does.
@@ -496,7 +530,7 @@ class World:
         signal, so that is what gets simulated.
         """
         base = _amount_for(self.rng, mcc, trait)
-        return float(base * self.rng.uniform(*factor))
+        return float(base * self.rng.uniform(*factor) * self.restraint)
 
     def when(self) -> datetime:
         """Start time for an attack instance, uniform across the observation window.
@@ -540,11 +574,20 @@ def _attack_v001(world: World, params: dict[str, Any]) -> None:
     # the fraudulent ROWS in the ledger and drowning out every other vector in any
     # row-weighted metric.
     n = int(np.clip(rng.integers(*params["cards_per_sweep"]) // 8, 6, 26))
+    if world.slow:
+        # A careless operator runs the sweep by hand: fewer attempts, human pacing, and
+        # a cadence that no longer separates from ordinary checkout behaviour.
+        n = max(3, n // 3)
     decline_ratio = float(rng.uniform(*params["decline_ratio"]))
     declines = int(n * decline_ratio)
     gap_ms = int(rng.integers(*params["inter_arrival_ms"]))
+    if world.slow:
+        gap_ms = int(gap_ms * rng.uniform(6, 40))
 
-    events, outcome = scripted_attack_events(rng, world.cfg, n, declines)
+    if world.slow:
+        events, outcome = legit_session_events(rng, world.cfg, trait, 2000.0)
+    else:
+        events, outcome = scripted_attack_events(rng, world.cfg, n, declines)
     key = em.session(ts=t0, account_id=trait.account_id, device_id=device, channel="cards_cnp",
                      events=events, outcome=outcome, is_fraud=True, vector_id="V001",
                      instance_id=iid, chain_position=1, generation=0)
@@ -561,13 +604,16 @@ def _attack_v001(world: World, params: dict[str, Any]) -> None:
             chain_position=1, generation=0,
         )
 
+    if world.aborted(2):
+        return
     merchant = world.merchant("5732")
     em.transaction(
         ts=t0 + timedelta(milliseconds=n * gap_ms + 30_000),
         account_id=trait.account_id, device_id=device, merchant_id=merchant["merchant_id"],
         amount=world.amount(trait, merchant["mcc"], (1.8, 9.0)),
         channel="cards_cnp", geography=trait.home_geo, mcc=merchant["mcc"],
-        auth_result="approved", session_key=key, is_fraud=True, vector_id="V001",
+        auth_result="declined" if world.declined else "approved",
+        session_key=key, is_fraud=True, vector_id="V001",
         instance_id=iid, chain_position=2, generation=0,
     )
 
@@ -595,7 +641,14 @@ def _attack_v002(world: World, params: dict[str, Any]) -> None:
     # fan out, then collect: short residence at every hop
     hub, sink = mules[0], mules[-1]
     remaining = amount
-    for mule in mules[1:-1] or mules[1:]:
+    if world.aborted(2):
+        return
+    dormant = world.rng.random() < float(
+        world.cfg["simulation"].get("realism", {}).get("p_dormant_hop", 0.0)
+    )
+    for hop, mule in enumerate(mules[1:-1] or mules[1:]):
+        if world.aborted(2 + hop // 3):
+            return
         share = remaining / max(len(mules) - 2, 1) * float(
             1 + rng.uniform(*params["split_ratio_jitter"]) - 0.15
         )
@@ -610,6 +663,10 @@ def _attack_v002(world: World, params: dict[str, Any]) -> None:
         em.edge(ts=t1, source=hub, target=mule, amount=share, edge_type="transfer")
 
         residence = float(rng.uniform(*params["residence_seconds"]))
+        if dormant:
+            # Money that rests looks like money that belongs there. This is the single
+            # most discriminative graph feature, so it must not be free.
+            residence *= float(rng.uniform(20, 400))
         t2 = t1 + timedelta(seconds=residence)
         onward = share * float(rng.uniform(0.9, 0.99))
         em.transaction(
@@ -640,6 +697,8 @@ def _attack_v003(world: World, params: dict[str, Any]) -> None:
     em.edge(ts=t0, source=trait.account_id, target=beneficiary, amount=0.0,
             edge_type="shared_beneficiary")
 
+    if world.aborted(2):
+        return                      # the victim stopped: session only, no money moved
     t1 = t0 + timedelta(minutes=float(rng.uniform(1, 8)))
     em.transaction(
         ts=t1, account_id=trait.account_id, device_id=device, merchant_id=None,
@@ -648,6 +707,8 @@ def _attack_v003(world: World, params: dict[str, Any]) -> None:
         session_key=key, is_fraud=True, vector_id="V003", instance_id=iid,
         chain_position=2, generation=0,
     )
+    if world.aborted(3):
+        return                      # the micro test went through and nothing followed
     t2 = t1 + timedelta(minutes=float(rng.uniform(1, 25)))
     em.transaction(
         ts=t2, account_id=trait.account_id, device_id=device, merchant_id=None, amount=amount,
@@ -688,6 +749,8 @@ def _attack_v004(world: World, params: dict[str, Any]) -> None:
     em.edge(ts=t0, source=trait.account_id, target=str(rng.choice(world.mule_pool)),
             amount=0.0, edge_type="token_provision")
 
+    if world.aborted(2):
+        return                      # step-up held; the session is all that exists
     t1 = t0 + timedelta(minutes=float(rng.uniform(*params["minutes_device_to_drain"])))
     merchant = world.merchant("5732")
     em.transaction(
@@ -695,7 +758,8 @@ def _attack_v004(world: World, params: dict[str, Any]) -> None:
         merchant_id=merchant["merchant_id"],
         amount=world.amount(trait, merchant["mcc"], (2.0, 14.0)),
         channel="wallets_tokenisation", geography=geo, mcc=merchant["mcc"],
-        auth_result="approved", session_key=key, is_fraud=True, vector_id="V004",
+        auth_result="declined" if world.declined else "approved",
+        session_key=key, is_fraud=True, vector_id="V004",
         instance_id=iid, chain_position=3, generation=0,
     )
 
@@ -729,7 +793,11 @@ def _attack_v005(world: World, params: dict[str, Any]) -> None:
     n = int(rng.integers(*params["n_withdrawals"]))
     t = t0 + timedelta(days=dormant)
     sink = str(rng.choice(world.mule_pool))
+    if world.aborted(2):
+        return                      # account opened and never used
     for i in range(n):
+        if i > 0 and world.aborted(2 + i // 4):
+            return
         t = t + timedelta(hours=float(rng.uniform(0.5, 9)))
         amount = threshold - float(rng.uniform(*params["under_threshold_margin_inr"]))
         em.transaction(

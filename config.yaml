@@ -34,6 +34,19 @@ simulation:
     scripted_cadence_cv: [0.02, 0.18]   # scripts and agents do not
     noise_floor: 0.15                   # fraction of instances given the opposite profile
 
+  # Attack realism. Diagnosis from the first full ablation: 99.3% of fraudulent rows
+  # outscored 99% of legitimate traffic, with an empty gap between 0.02 and 0.94. Every
+  # chain executed cleanly, start to finish, at attacker-optimal pace. Real attacks fail
+  # partway, get declined, are abandoned by a suspicious victim, or are run by someone
+  # careless enough to look ordinary.
+  realism:
+    enabled: true
+    p_abort_per_stage: 0.22      # chance a chain stops before each remaining stage
+    p_slow_actor: 0.30           # this instance is run at human pace, not machine pace
+    p_dormant_hop: 0.35          # laundering hop rests for hours or days, not minutes
+    p_declined_extraction: 0.18  # the extraction attempt is declined and not retried
+    amount_restraint: [0.15, 1.0]  # multiplier on the attack amount; some are cautious
+
 split:
   # PDF S6.2. Both conditions, not either.
   mode: time_and_account

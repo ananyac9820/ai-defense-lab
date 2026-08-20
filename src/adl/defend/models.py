@@ -17,6 +17,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import average_precision_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
@@ -133,3 +134,103 @@ def top_contributions(
             for i in order
         ])
     return out
+
+
+TUNING_GRID = [
+    {"max_depth": 4, "learning_rate": 0.10, "n_estimators": 300, "min_child_weight": 5},
+    {"max_depth": 6, "learning_rate": 0.06, "n_estimators": 500, "min_child_weight": 3},
+    {"max_depth": 6, "learning_rate": 0.10, "n_estimators": 300, "min_child_weight": 10},
+    {"max_depth": 8, "learning_rate": 0.05, "n_estimators": 600, "min_child_weight": 5},
+    {"max_depth": 8, "learning_rate": 0.10, "n_estimators": 400, "min_child_weight": 1},
+    {"max_depth": 10, "learning_rate": 0.05, "n_estimators": 500, "min_child_weight": 3},
+]
+
+
+def fit_tuned_baseline(
+    train: pd.DataFrame,
+    test: pd.DataFrame,
+    columns: list[str],
+    *,
+    seed: int = 0,
+    validation_fraction: float = 0.2,
+) -> tuple[Fitted, dict[str, Any]]:
+    """A gradient-boosted baseline on transaction-level features, actually tuned.
+
+    A logistic regression at 0.079 precision is a floor, not a baseline. Quoting lift
+    against it produces a number in the high hundreds of percent that collapses the moment
+    a judge asks what the baseline was. This is the honest comparator: the same model class
+    as the full detector, tuned, given every transaction-level feature, and denied only the
+    session and graph evidence that the architecture argument is about.
+
+    Selection runs on a time-ordered tail of the TRAINING window. Tuning against test would
+    be a quieter version of the leakage the split exists to prevent.
+    """
+    import xgboost as xgb
+
+    ordered = train.sort_values("timestamp", kind="stable")
+    cut = int(len(ordered) * (1 - validation_fraction))
+    fit_part, validation = ordered.iloc[:cut], ordered.iloc[cut:]
+
+    x_fit = _matrix(fit_part, columns)
+    y_fit = fit_part["is_fraud"].to_numpy()
+    x_val = _matrix(validation, columns)
+    y_val = validation["is_fraud"].to_numpy()
+
+    positives = max(int(y_fit.sum()), 1)
+    weight = float(len(y_fit) - positives) / positives
+
+    best_config: dict[str, Any] | None = None
+    best_score = -np.inf
+    trials: list[dict[str, Any]] = []
+
+    for config in TUNING_GRID:
+        model = xgb.XGBClassifier(
+            **config,
+            subsample=0.85,
+            colsample_bytree=0.85,
+            reg_lambda=1.0,
+            scale_pos_weight=weight,
+            random_state=seed,
+            n_jobs=-1,
+            eval_metric="aucpr",
+            tree_method="hist",
+        )
+        model.fit(x_fit, y_fit)
+        score = (
+            average_precision_score(y_val, model.predict_proba(x_val)[:, 1])
+            if len(np.unique(y_val)) > 1
+            else 0.0
+        )
+        trials.append({**config, "val_auc_pr": round(float(score), 4)})
+        if score > best_score:
+            best_score, best_config = float(score), config
+
+    assert best_config is not None
+    x_train, x_test = _matrix(train, columns), _matrix(test, columns)
+    y_train = train["is_fraud"].to_numpy()
+    final_positives = max(int(y_train.sum()), 1)
+    final = xgb.XGBClassifier(
+        **best_config,
+        subsample=0.85,
+        colsample_bytree=0.85,
+        reg_lambda=1.0,
+        scale_pos_weight=float(len(y_train) - final_positives) / final_positives,
+        random_state=seed,
+        n_jobs=-1,
+        eval_metric="aucpr",
+        tree_method="hist",
+    )
+    final.fit(x_train, y_train)
+
+    fitted = Fitted(
+        name="xgboost_tuned_transaction_only",
+        columns=columns,
+        scores_train=final.predict_proba(x_train)[:, 1],
+        scores_test=final.predict_proba(x_test)[:, 1],
+        model=final,
+    )
+    return fitted, {
+        "selected": best_config,
+        "validation_auc_pr": round(best_score, 4),
+        "trials": trials,
+    }
