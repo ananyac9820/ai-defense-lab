@@ -546,3 +546,69 @@ Removing it moves AUC-PR from 0.977 to 0.976 and *improves* F1 from 0.891 to 0.8
 contributes nothing. The cadence signal contributes 0.004 AUC-PR, which is inside noise.
 
 Reported as a negative result. No effect size has been touched at any point.
+
+---
+
+# D-030 — Holding out the extraction found the boundary (20 Aug 2026)
+
+Preview at 300k, ahead of the full-scale confirmation. Three holdouts, each withholding
+something different.
+
+| Held out | What is novel | Instance detection |
+|---|---|---|
+| V004 SIM-swap takeover | acquisition and establishment; extraction is `drain_single`, seen | **100%** |
+| V007 hijacked agent | `compromise_agent` + `agentic_purchase`, both unseen | **100%** |
+| V006 merchant collusion | `merchant_collusion_payout`, unseen | **20%** (1 of 5) |
+| V008 composition | nothing; four seen primitives in an unseen order | **100%** |
+
+Seen instance recall 96.4%. Held-out family recall 75.0% overall, entirely because of
+V006.
+
+**The boundary is the rail, not the family and not the composition.** V004 changes how
+access is obtained and is caught, because the extraction still looks like every other
+extraction. V008 rearranges seen primitives and is caught, because recombination does not
+change what any of them emit. V007 introduces two unseen primitives and is still caught,
+because an agentic purchase is still a purchase: anomalous amount, unfamiliar merchant,
+device with no history.
+
+V006 evades because it extracts through a **merchant acquiring account**. Value never
+touches a peer-to-peer transfer rail, so the graph signature the detector learned - a
+large movement to a novel beneficiary, short residence, fan-in - simply is not there.
+
+This sharpens the Defend claim rather than weakening it. The detector generalises across
+attack families and across recombinations of known primitives, and it fails when the
+extraction moves to a rail it has never seen. That is a specific, falsifiable statement
+about where supervised detection stops, and it is the argument for the loop: the thing
+that finds V006-shaped gaps is an adversary searching the grammar, not a bigger training
+set.
+
+## D-031 — The separability nudge worked
+
+Extraction now routes through a category the victim already uses 55% of the time.
+
+| | before | after |
+|---|---|---|
+| fraud_above_legit_p99 | 0.988 | **0.913** |
+| fraud_in_overlap_band | <0.05 | **0.173** |
+| separation_gap | +0.031 | **-0.011** |
+| fraud_p50 | 1.0 | 0.722 |
+
+Inside the agreed 0.85-0.95 band, with a genuine overlap corridor rather than an empty
+one. Stopping here as agreed; this was one nudge, not a campaign.
+
+## Two silent bugs, both found by running rather than reading
+
+**The vector filter still tested the retired registry.** `vector_cycle` filtered on
+membership of the hardcoded `ATTACKS` dict rather than on whether the chain's primitives
+are implemented. All three new vectors were counted in the taxonomy, validated against
+the contract, and emitted nothing whatsoever. Coverage would have been reported as 7/7
+channels while two of those channels had no data behind them.
+
+**The ledger cache key ignored the attack set.** Keyed on seed and size only, so the
+first run after adding three vectors silently reused a ledger generated before they
+existed. The evaluation ran to completion and reported on the wrong experiment. The key
+now includes a digest of vector ids, chains, parameters and holdout flags.
+
+Both belong in the walkthrough's methodology section. A cache that returns stale results
+and a filter that drops vectors are exactly the failures that produce numbers for code
+that never ran.
