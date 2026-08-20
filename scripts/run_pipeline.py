@@ -54,6 +54,27 @@ from adl.generate.simulator import simulate
 PUBLISHED = ARTIFACTS_DIR / "published"
 
 
+def load_cached_ledger(cache_dir):  # noqa: ANN001, ANN201
+    """Reload a previously simulated ledger from Parquet.
+
+    Reproducibility is unaffected: the cache key is the seed and the size, and the
+    simulator is deterministic in both, so a cached ledger is bit-identical to the one a
+    fresh run would produce. Deleting the cache directory is always safe.
+    """
+    from adl.generate.simulator import Ledger
+
+    tables = {
+        name: pd.read_parquet(cache_dir / f"{name}.parquet")
+        for name in ("accounts", "devices", "merchants", "transactions",
+                     "sessions", "session_events", "graph_edges")
+    }
+    return Ledger(
+        **tables,
+        meta={"prevalence_actual": float(tables["transactions"]["is_fraud"].mean()),
+              "cached": True},
+    )
+
+
 def _git_sha() -> str | None:
     try:
         return subprocess.run(
@@ -164,6 +185,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--accounts", type=int, default=None)
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--no-publish", action="store_true")
+    parser.add_argument(
+        "--cache-ledger",
+        action="store_true",
+        help="Write the simulated ledger to artifacts/ledger_cache and reuse it on the "
+             "next run with the same seed and size. A two-million-row simulate takes "
+             "half an hour; throwing that away on every iteration is the difference "
+             "between running the evaluation twice a day and twenty times.",
+    )
     args = parser.parse_args(argv)
 
     cfg = load_config()
@@ -175,8 +204,16 @@ def main(argv: list[str] | None = None) -> int:
     seen_vectors = {v["vector_id"] for v in attacks["vectors"]} - held_out
 
     print("=" * 74)
-    print("simulate")
-    ledger = simulate(n_transactions=args.transactions, seed=seed, n_accounts=args.accounts)
+    cache_dir = ARTIFACTS_DIR / "ledger_cache" / f"{seed}-{args.transactions}-{args.accounts}"
+    if args.cache_ledger and (cache_dir / "transactions.parquet").exists():
+        print(f"simulate (cached: {cache_dir.name})")
+        ledger = load_cached_ledger(cache_dir)
+    else:
+        print("simulate")
+        ledger = simulate(n_transactions=args.transactions, seed=seed, n_accounts=args.accounts)
+        if args.cache_ledger:
+            ledger.write_parquet(cache_dir)
+            print(f"  cached to {cache_dir.name}")
     print("  " + ledger.summary())
 
     print("features")
