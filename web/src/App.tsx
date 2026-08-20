@@ -1,51 +1,52 @@
-import { lazy, Suspense, type ReactElement } from 'react';
-import { motion } from 'framer-motion';
-import { ENVIRONMENTS, useStore, type EnvironmentId } from './lib/store';
-import { FixtureBadge } from './components/ui';
+import { useEffect, useState } from 'react';
+import { ENVIRONMENTS, useStore } from './lib/store';
+import { FixtureMark, Hatch, Leader, Plate, SectionMark } from './components/plate';
+import { Constellation, Helix, Ledger, Mirror, Nebula, Surface } from './sections/Sections';
+import { Legal } from './pages/Legal';
 
 /**
- * Environments are lazy-loaded so the 2D path never pays for the 3D runtime
- * (design spec, Performance). Today all six are 2D; from Phase 5 four of these
- * imports point at WebGL scenes and the split already exists.
+ * One continuous document.
+ *
+ * There is no page switch and no panel that replaces another. The six views are sections
+ * of a single scroll laid over one fixed hairline ground, and each one overlaps the last
+ * so the boundaries are never drawn. Terms and privacy are the only separate routes,
+ * because they are documents rather than views.
  */
-const VIEWS: Record<EnvironmentId, React.LazyExoticComponent<() => ReactElement>> = {
-  constellation: lazy(() => import('./environments/ThreatConstellation')),
-  ledger: lazy(() => import('./environments/LedgerStream')),
-  nebula: lazy(() => import('./environments/AccountNebula')),
-  surface: lazy(() => import('./environments/DetectionSurface')),
-  helix: lazy(() => import('./environments/LoopHelix')),
-  mirror: lazy(() => import('./environments/FidelityMirror')),
-};
 
-function PerspectiveToggle() {
+function useHashRoute(): string {
+  const [route, setRoute] = useState(() => window.location.hash.replace(/^#\/?/, ''));
+  useEffect(() => {
+    const onChange = () => setRoute(window.location.hash.replace(/^#\/?/, ''));
+    window.addEventListener('hashchange', onChange);
+    return () => window.removeEventListener('hashchange', onChange);
+  }, []);
+  return route;
+}
+
+function Inversion() {
   const { perspective, flip } = useStore();
   const attacker = perspective === 'attacker';
   return (
     <button
       onClick={flip}
-      className="glass relative flex h-11 w-56 items-center rounded-full px-1 text-sm"
+      className="hit mono flex items-stretch border border-[var(--color-ink)] text-[10px] uppercase tracking-[0.16em]"
       aria-label={`Switch to ${attacker ? 'defender' : 'attacker'} view`}
-      title="Same scene, same data. The meaning inverts."
     >
-      <motion.span
-        layout
-        transition={{ type: 'spring', stiffness: 220, damping: 26 }}
-        className="absolute h-9 w-[6.5rem] rounded-full"
-        style={{
-          background: 'color-mix(in oklab, var(--accent) 22%, transparent)',
-          border: '1px solid color-mix(in oklab, var(--accent) 50%, transparent)',
-          left: attacker ? 'calc(100% - 6.75rem)' : '0.25rem',
-        }}
-      />
       <span
-        className="relative z-10 flex-1 text-center tracking-wide"
-        style={{ color: attacker ? 'var(--color-slate)' : 'var(--accent)' }}
+        className="px-2.5 py-1.5"
+        style={{
+          background: attacker ? 'transparent' : 'var(--color-defend)',
+          color: attacker ? 'var(--color-ink-40)' : 'var(--color-paper)',
+        }}
       >
         Defender
       </span>
       <span
-        className="relative z-10 flex-1 text-center tracking-wide"
-        style={{ color: attacker ? 'var(--accent)' : 'var(--color-slate)' }}
+        className="border-l border-[var(--color-ink)] px-2.5 py-1.5"
+        style={{
+          background: attacker ? 'var(--color-attack)' : 'transparent',
+          color: attacker ? 'var(--color-paper)' : 'var(--color-ink-40)',
+        }}
       >
         Attacker
       </span>
@@ -53,122 +54,204 @@ function PerspectiveToggle() {
   );
 }
 
-function Rail() {
-  const { environment, setEnvironment } = useStore();
+function Header() {
+  const { bundle } = useStore();
   return (
-    <nav className="glass flex flex-col gap-1 p-2">
-      {ENVIRONMENTS.map((env) => {
-        const active = env.id === environment;
-        return (
-          <button
-            key={env.id}
-            onClick={() => setEnvironment(env.id)}
-            className="group relative rounded-2xl px-4 py-3 text-left transition-colors"
-            style={{
-              background: active
-                ? 'color-mix(in oklab, var(--accent) 12%, transparent)'
-                : 'transparent',
-            }}
-          >
-            <div className="label-caps flex items-center gap-2">
-              <span>{env.pillar}</span>
-              <span
-                className="rounded px-1 text-[9px]"
-                style={{
-                  border: '1px solid var(--color-edge)',
-                  color: env.dim === '3D' ? 'var(--accent)' : 'var(--color-slate)',
-                }}
+    <header className="sticky top-0 z-30 border-b border-[var(--color-ink)] bg-[var(--color-paper)]">
+      <div className="mx-auto flex max-w-[1360px] items-center gap-4 px-6 py-2.5">
+        <a href="#/" className="mono text-[11px] uppercase tracking-[0.2em]">
+          AI Defense Lab
+        </a>
+        <span className="tag hidden md:inline">Team Code Ops / GFF 2026</span>
+        <nav className="mono ml-auto hidden gap-4 text-[10px] uppercase tracking-[0.14em] lg:flex">
+          {ENVIRONMENTS.map((e) => (
+            <a key={e.id} href={`#${e.id}`} className="hit text-[var(--color-ink-60)]">
+              {e.index} {e.pillar}
+            </a>
+          ))}
+        </nav>
+        <FixtureMark on={bundle?.manifest.is_fixture ?? false} />
+        <Inversion />
+      </div>
+    </header>
+  );
+}
+
+function Masthead() {
+  const { bundle, perspective } = useStore();
+  const attacker = perspective === 'attacker';
+  const m = bundle?.manifest;
+
+  return (
+    <section className="relative z-10 pt-14">
+      <div className="grid gap-8 lg:grid-cols-[1.5fr_1fr]">
+        <div>
+          <div className="tag">Mastercard Innovation Challenge / submission dossier</div>
+          <h1 className="display mt-4 text-[clamp(3rem,9vw,7.5rem)]">
+            RED TEAM,
+            <br />
+            BY DESIGN.
+          </h1>
+          <div className="mt-6 flex items-start gap-4">
+            <Leader length={70} className="mt-3 hidden md:flex" />
+            <p className="max-w-[52ch] text-[15px] leading-[1.55] text-[var(--color-ink-60)]">
+              We play the attacker and the defender, and make each one improve the other. The
+              same world, read from either side: a mule network is a route from one and a
+              detection surface from the other.{' '}
+              {attacker ? 'You are reading the attacker side.' : 'You are reading the defender side.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="relative">
+          <Plate title="run" index={m ? `seed ${m.seed}` : 'n/a'} className="lg:-mr-4">
+            {m ? (
+              <dl className="mono text-[11px]">
+                {[
+                  ['run id', m.run_id],
+                  ['prevalence', `${(m.prevalence * 100).toFixed(3)}%`],
+                  ['config hash', m.config_hash.slice(0, 16)],
+                  ['generations', String(m.generations.length)],
+                  ['review cost', `INR ${m.cost_model.review_cost_inr}`],
+                ].map(([k, v]) => (
+                  <div
+                    key={k}
+                    className="flex justify-between border-b border-[var(--color-rule)] py-1 last:border-0"
+                  >
+                    <dt className="text-[var(--color-ink-40)]">{k}</dt>
+                    <dd>{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <div className="mono text-[11px] text-[var(--color-ink-40)]">reading run manifest</div>
+            )}
+          </Plate>
+
+          <Plate title="scope boundary" index="s9" className="mt-6 lg:ml-10">
+            <p className="text-[12px] leading-[1.5] text-[var(--color-ink-60)]">
+              This repository generates synthetic data. It does not generate attack tooling.
+              Records, session events and graph edges, in full detail. No voice cloning, no
+              phishing generators, no deepfake code, nothing that can reach a live endpoint.
+            </p>
+          </Plate>
+        </div>
+      </div>
+
+      <Hatch h={14} className="mt-16" />
+    </section>
+  );
+}
+
+function Colophon() {
+  const { bundle } = useStore();
+  return (
+    <section id="colophon" className="relative z-10 pt-28 pb-20">
+      <SectionMark index="07" title="Colophon" />
+      <div className="mt-8 grid gap-10 lg:grid-cols-3">
+        <div>
+          <div className="tag">reproduction</div>
+          <p className="mono mt-2 text-[11px] leading-relaxed">
+            git clone …/ai-defense-lab
+            <br />
+            pip install -e ".[dev]"
+            <br />
+            python scripts/reproduce.py
+          </p>
+          <p className="mt-3 text-[13px] leading-[1.5] text-[var(--color-ink-60)]">
+            Every reported number regenerates from one command and one seed on a clean clone.
+          </p>
+        </div>
+        <div>
+          <div className="tag">reference data</div>
+          <p className="mt-2 text-[13px] leading-[1.5] text-[var(--color-ink-60)]">
+            IEEE-CIS and PaySim calibrate distributions. Neither supplies a row, and neither is
+            redistributed here. Only the derived profile is committed.
+          </p>
+        </div>
+        <div>
+          <div className="tag">documents</div>
+          <ul className="mono mt-2 text-[11px]">
+            <li className="border-b border-[var(--color-rule)] py-1">
+              <a className="hit underline underline-offset-2" href="#/terms">
+                Terms of use
+              </a>
+            </li>
+            <li className="border-b border-[var(--color-rule)] py-1">
+              <a className="hit underline underline-offset-2" href="#/privacy">
+                Privacy notice
+              </a>
+            </li>
+            <li className="py-1">
+              <a
+                className="hit underline underline-offset-2"
+                href="https://github.com/ananyac9820/ai-defense-lab"
+                target="_blank"
+                rel="noreferrer"
               >
-                {env.dim}
-              </span>
-            </div>
-            <div
-              className="mt-0.5 text-sm"
-              style={{ color: active ? 'var(--accent)' : 'var(--color-bone)' }}
-            >
-              {env.label}
-            </div>
-          </button>
-        );
-      })}
-    </nav>
+                Repository
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div className="tag mt-14 border-t border-[var(--color-ink)] pt-3">
+        {bundle?.manifest.is_fixture
+          ? 'Rendering fixture artefacts. Shapes are real; numbers are invented and marked.'
+          : 'Rendering live artefacts from artifacts/published.'}
+      </div>
+    </section>
   );
 }
 
 export default function App() {
-  const { environment, bundle, error, perspective } = useStore();
-  const View = VIEWS[environment];
+  const { error, load } = useStore();
+  const route = useHashRoute();
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  if (route === 'terms' || route === 'privacy') {
+    return (
+      <>
+        <div className="ground" aria-hidden />
+        <Header />
+        <main className="relative mx-auto max-w-[1360px] px-6">
+          <Legal kind={route} />
+        </main>
+      </>
+    );
+  }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-[1600px] flex-col gap-6 p-6">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <div className="label-caps">Mastercard Innovation Challenge · GFF 2026 · Team Code Ops</div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            AI Defense Lab
-            <span className="ml-3 text-base font-normal text-[var(--color-slate)]">
-              {perspective === 'defender'
-                ? 'a detection surface'
-                : 'a route map'}
-            </span>
-          </h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <FixtureBadge isFixture={bundle?.manifest.is_fixture ?? false} />
-          <PerspectiveToggle />
-        </div>
-      </header>
-
-      <div className="grid flex-1 grid-cols-[15rem_1fr] gap-6">
-        <Rail />
-        <main className="min-w-0">
-          {error ? (
-            <div className="glass p-6 text-sm" style={{ color: 'var(--color-attack-2)' }}>
-              <div className="label-caps mb-2">artefact load failed</div>
-              {error}
-              <div className="mt-3 text-[var(--color-slate)]">
-                Run <code className="tabular">npm run sync-data</code> to copy fixtures into
-                web/public/data.
-              </div>
+    <>
+      <div className="ground" aria-hidden />
+      <Header />
+      <main className="relative mx-auto max-w-[1360px] px-6">
+        {error ? (
+          <div className="plate mt-20 p-4" style={{ borderColor: 'var(--color-attack)' }}>
+            <div className="tag" style={{ color: 'var(--color-attack)' }}>
+              artefact load failed
             </div>
-          ) : (
-            // Keyed remount rather than AnimatePresence: mode="wait" holds the exiting
-            // child until its exit animation resolves, and under React 19 StrictMode with a
-            // Suspense boundary inside it never did - the rail highlight moved but the view
-            // did not. The real cross-dissolve arrives with the 3D camera in Phase 5; a
-            // fade-in is the honest 2D equivalent until then.
-            <motion.div
-                key={environment}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <Suspense
-                  fallback={
-                    <div className="glass grid h-96 place-items-center text-sm text-[var(--color-slate)]">
-                      loading environment…
-                    </div>
-                  }
-                >
-                  <View />
-                </Suspense>
-              </motion.div>
-          )}
-        </main>
-      </div>
-
-      <footer className="label-caps flex flex-wrap items-center justify-between gap-2">
-        <span>
-          2D views · reduced-motion path and venue fallback · built against{' '}
-          {bundle?.manifest.is_fixture ? 'fixtures' : 'live artefacts'}
-        </span>
-        {bundle && (
-          <span className="tabular">
-            run {bundle.manifest.run_id} · seed {bundle.manifest.seed} · prevalence{' '}
-            {(bundle.manifest.prevalence * 100).toFixed(2)}%
-          </span>
+            <p className="mono mt-2 text-[12px]">{error}</p>
+            <p className="tag mt-3 normal-case tracking-normal">
+              Run npm run sync-data to copy artefacts into web/public/data.
+            </p>
+          </div>
+        ) : (
+          <>
+            <Masthead />
+            <Constellation />
+            <Ledger />
+            <Nebula />
+            <Surface />
+            <Helix />
+            <Mirror />
+            <Colophon />
+          </>
         )}
-      </footer>
-    </div>
+      </main>
+    </>
   );
 }

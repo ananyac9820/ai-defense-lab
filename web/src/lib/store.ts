@@ -11,12 +11,12 @@ import { loadBundle, type Bundle } from './data';
 export type Perspective = 'defender' | 'attacker';
 
 export const ENVIRONMENTS = [
-  { id: 'constellation', label: 'Threat Constellation', pillar: 'Identify', dim: '3D' },
-  { id: 'ledger', label: 'Ledger Stream', pillar: 'Generate', dim: '2D' },
-  { id: 'nebula', label: 'Account Nebula', pillar: 'Graph', dim: '3D' },
-  { id: 'surface', label: 'Detection Surface', pillar: 'Defend', dim: '3D' },
-  { id: 'helix', label: 'Loop Helix', pillar: 'The Loop', dim: '3D' },
-  { id: 'mirror', label: 'Fidelity Mirror', pillar: 'Evidence', dim: '2D' },
+  { id: 'constellation', label: 'Threat Constellation', pillar: 'Identify', index: '01' },
+  { id: 'ledger', label: 'Ledger Stream', pillar: 'Generate', index: '02' },
+  { id: 'nebula', label: 'Account Nebula', pillar: 'Graph', index: '03' },
+  { id: 'surface', label: 'Detection Surface', pillar: 'Defend', index: '04' },
+  { id: 'helix', label: 'Loop Helix', pillar: 'The Loop', index: '05' },
+  { id: 'mirror', label: 'Fidelity Mirror', pillar: 'Evidence', index: '06' },
 ] as const;
 
 export type EnvironmentId = (typeof ENVIRONMENTS)[number]['id'];
@@ -64,18 +64,16 @@ export const useStore = create<State>((set, get) => ({
   },
 }));
 
-/** Accent pair for the current side. Read this, never a hard-coded hex. */
-export function accents(p: Perspective): { a: string; b: string } {
-  return p === 'defender'
-    ? { a: 'var(--color-defend)', b: 'var(--color-defend-2)' }
-    : { a: 'var(--color-attack)', b: 'var(--color-attack-2)' };
-}
-
-/** Applies the perspective to the CSS custom properties the whole app reads. */
+/**
+ * One spot colour, swapped by the inversion. Viridian reads as the defence, vermilion as
+ * the attack. Everything else on the page is paper and ink, so the single swap is
+ * legible without any of it being decorative.
+ */
 export function applyPerspective(p: Perspective): void {
-  const { a, b } = accents(p);
   const root = document.documentElement;
-  root.style.setProperty('--accent', a);
-  root.style.setProperty('--accent-2', b);
+  root.style.setProperty(
+    '--spot',
+    p === 'defender' ? 'var(--color-defend)' : 'var(--color-attack)'
+  );
   root.dataset.perspective = p;
 }
