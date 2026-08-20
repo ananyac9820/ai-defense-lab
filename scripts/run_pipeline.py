@@ -1,13 +1,21 @@
 """End to end: simulate, split, train, evaluate, publish.
 
-Phase 2's checkpoint is that the whole pipeline executes start to finish - taxonomy to
-simulator to detector to metrics - before any component is deepened. This is that path.
+    python scripts/run_pipeline.py --transactions 2000000 --accounts 40000
 
-    python scripts/run_pipeline.py --transactions 300000
+Writes to artifacts/published/: run_manifest.json, misses.g0.json, demo_slice.json,
+score_distribution.json. Those are what the prototype reads and the only generated files
+that get committed. The full ledger stays out of git and is regenerable from the seed.
 
-Writes to artifacts/published/: run_manifest.json, misses.g0.json, demo_slice.json.
-Those three are what the prototype reads, and they are the only generated files that get
-committed. The full ledger stays out of git and is regenerable from the seed.
+Three things this script is careful about, all of them things a judge can ask about:
+
+  * The headline baseline is a TUNED gradient-boosted model on transaction features, not
+    the logistic regression. Lift over a weak floor is a number that collapses under one
+    question. The logistic regression is kept and reported as a floor, labelled as such.
+  * Held-out attack families never appear in training, and their metrics are reported
+    separately. Merging them with seen performance would be the single most misleading
+    thing this repository could do.
+  * The score distribution is printed. If fraud sits far from the boundary rather than
+    near it, high recall is a statement about attack realism, not detector quality.
 """
 
 from __future__ import annotations
@@ -16,7 +24,6 @@ import argparse
 import json
 import subprocess
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -32,7 +39,7 @@ from adl.defend.features import (
     build_features,
     feature_columns,
 )
-from adl.defend.models import fit_baseline, fit_gbm, top_contributions
+from adl.defend.models import fit_baseline, fit_gbm, fit_tuned_baseline, top_contributions
 from adl.evaluate.metrics import (
     add_lift,
     choose_threshold,
@@ -56,22 +63,44 @@ def _git_sha() -> str | None:
         return None
 
 
-def _demo_slice(ledger, score_lookup: dict[str, float], n_rows: int) -> dict[str, Any]:
-    """Columnar JSON, session events only for surfaced alerts.
+def score_distribution(y: np.ndarray, scores: np.ndarray, threshold: float) -> dict[str, Any]:
+    """How far fraud sits from the boundary, and how far legitimate traffic sits from it.
 
-    Row-of-objects JSON for 35k transactions with nested session events runs to tens of
-    megabytes and blows the three-second load budget. Columns-of-arrays plus a targeted
-    session payload gets the same information into a few.
-
-    The slice is contiguous in time rather than sampled, so the Ledger Stream shows a real
-    window of traffic at its real density instead of a thinned-out one.
+    A detector at 100% recall can mean two very different things. If fraudulent instances
+    score just above the threshold, the problem is hard and the model is good at it. If
+    they cluster at the top of the range with a wide empty gap beneath them, the attacks
+    are too clean and the number is a statement about the simulator.
     """
+    fraud = np.asarray(scores)[np.asarray(y) == 1]
+    legit = np.asarray(scores)[np.asarray(y) == 0]
+    if not len(fraud) or not len(legit):
+        return {}
+
+    legit_99 = float(np.percentile(legit, 99))
+    return {
+        "n_fraud": int(len(fraud)),
+        "fraud_p05": round(float(np.percentile(fraud, 5)), 4),
+        "fraud_p50": round(float(np.percentile(fraud, 50)), 4),
+        "fraud_p95": round(float(np.percentile(fraud, 95)), 4),
+        "legit_p50": round(float(np.percentile(legit, 50)), 6),
+        "legit_p99": round(legit_99, 4),
+        "legit_p99_9": round(float(np.percentile(legit, 99.9)), 4),
+        "threshold": round(float(threshold), 6),
+        # The separation number. Near 1.0 means almost every fraudulent row outscores 99%
+        # of legitimate traffic, which is the shape of an unrealistically clean attack.
+        "fraud_above_legit_p99": round(float((fraud > legit_99).mean()), 4),
+        "fraud_within_2x_threshold": round(
+            float((fraud < threshold * 2).mean()) if threshold > 0 else 0.0, 4
+        ),
+    }
+
+
+def _demo_slice(ledger, score_lookup: dict[str, float], n_rows: int) -> dict[str, Any]:  # noqa: ANN001
+    """Columnar JSON, session events only for surfaced alerts."""
     txns = ledger.transactions
     start = max(0, len(txns) // 2 - n_rows // 2)
     window = txns.iloc[start:start + n_rows].reset_index(drop=True)
 
-    # Scores exist only for the test window; the rest of the slice carries None rather
-    # than a fabricated number.
     window_scores: list[float | None] = [
         None if t not in score_lookup else round(float(score_lookup[t]), 5)
         for t in window["transaction_id"]
@@ -92,7 +121,6 @@ def _demo_slice(ledger, score_lookup: dict[str, float], n_rows: int) -> dict[str
         "score": window_scores,
     }
 
-    # Only the alerts the UI can actually open get their session events shipped.
     surfaced = window.loc[
         [s is not None and s > 0.5 for s in window_scores], "session_id"
     ].dropna().unique()[:120]
@@ -102,7 +130,6 @@ def _demo_slice(ledger, score_lookup: dict[str, float], n_rows: int) -> dict[str
         for sid, group in events.groupby("session_id")
     }
 
-    # The account graph the Nebula renders: edges among accounts present in the window.
     accounts_in_window = set(window["account_id"])
     edges = ledger.graph_edges[
         ledger.graph_edges["source_account"].isin(accounts_in_window)
@@ -143,6 +170,10 @@ def main(argv: list[str] | None = None) -> int:
     seed = args.seed if args.seed is not None else cfg["run"]["seed"]
     review_cost = float(cfg["cost_model"]["review_cost_inr"])
 
+    attacks = json.loads((FIXTURES_DIR / "attacks.fixture.json").read_text(encoding="utf-8"))
+    held_out = {v["vector_id"] for v in attacks["vectors"] if v["holdout"] == "family"}
+    seen_vectors = {v["vector_id"] for v in attacks["vectors"]} - held_out
+
     print("=" * 74)
     print("simulate")
     ledger = simulate(n_transactions=args.transactions, seed=seed, n_accounts=args.accounts)
@@ -150,8 +181,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print("features")
     features = build_features(ledger)
-    print(f"  {features.shape[1]} columns over {len(features):,} rows · "
-          f"{features['sess_n_events'].notna().mean():.1%} of transactions carry a session")
+    print(f"  {features.shape[1]} columns over {len(features):,} rows")
 
     print("split")
     split = time_and_account_split(
@@ -161,31 +191,49 @@ def main(argv: list[str] | None = None) -> int:
     )
     assert_leak_free(split)
     print("  " + split.describe())
-    print(f"  prevalence train {split.train['is_fraud'].mean():.3%} · "
-          f"test {split.test['is_fraud'].mean():.3%}")
 
-    if split.test["is_fraud"].sum() < 20:
-        print("  WARNING: fewer than 20 fraudulent rows in test; metrics will be noisy")
+    # PDF S6.3. Held-out families never appear in training at all. Legitimate traffic is
+    # untouched; only the fraudulent rows of those vectors are withheld.
+    train_all, test_all = split.train, split.test
+    train = train_all[(train_all["is_fraud"] == 0) | (~train_all["vector_id"].isin(held_out))]
+    seen_test = test_all[(test_all["is_fraud"] == 0) | (test_all["vector_id"].isin(seen_vectors))]
+    unseen_test = test_all[(test_all["is_fraud"] == 0) | (test_all["vector_id"].isin(held_out))]
 
-    train, test = split.train, split.test
+    print(f"  held-out families: {sorted(held_out) or 'none'}")
+    print(f"  train       {len(train):>8,} rows, {int(train['is_fraud'].sum()):>5} fraud")
+    print(f"  seen test   {len(seen_test):>8,} rows, {int(seen_test['is_fraud'].sum()):>5} fraud")
+    print(f"  unseen test {len(unseen_test):>8,} rows, {int(unseen_test['is_fraud'].sum()):>5} fraud")
+
+    y_train = train["is_fraud"].to_numpy()
     amounts_train = train["amount_inr"].to_numpy()
-    amounts_test = test["amount_inr"].to_numpy()
-    y_train, y_test = train["is_fraud"].to_numpy(), test["is_fraud"].to_numpy()
+    y_seen = seen_test["is_fraud"].to_numpy()
+    amounts_seen = seen_test["amount_inr"].to_numpy()
+    y_unseen = unseen_test["is_fraud"].to_numpy()
+    amounts_unseen = unseen_test["amount_inr"].to_numpy()
 
-    print("train")
-    baseline_cols = list(cfg["baseline"]["features"])
-    baseline = fit_baseline(train, test, baseline_cols)
-    base_threshold, _ = choose_threshold(y_train, baseline.scores_train, amounts_train, review_cost)
+    txn_cols = list(cfg["baseline"]["features"])
+
+    print("baseline (tuned xgboost, primary)")
+    tuned, tuning = fit_tuned_baseline(train, seen_test, txn_cols, seed=seed)
+    tuned_threshold, _ = choose_threshold(y_train, tuned.scores_train, amounts_train, review_cost)
     baseline_metrics = compute_metrics(
-        y_test, baseline.scores_test, base_threshold,
-        review_cost_inr=review_cost, amounts=amounts_test,
+        y_seen, tuned.scores_test, tuned_threshold,
+        review_cost_inr=review_cost, amounts=amounts_seen,
     )
+    print(f"  selected {tuning['selected']}")
+    print(f"  validation AUC-PR {tuning['validation_auc_pr']}")
+
+    print("baseline (logistic regression, floor)")
+    floor = fit_baseline(train, seen_test, txn_cols)
+    floor_threshold, _ = choose_threshold(y_train, floor.scores_train, amounts_train, review_cost)
+    floor_metrics = compute_metrics(
+        y_seen, floor.scores_test, floor_threshold,
+        review_cost_inr=review_cost, amounts=amounts_seen,
+    )
+    add_lift(floor_metrics, baseline_metrics)
 
     all_levels = {"transaction", "session", "graph"}
     variants: list[tuple[str, list[str], bool]] = [
-        # Each level is added in turn so the lift it contributes is a stated number
-        # rather than an assertion (PDF S6.1), and the two behavioural signals are
-        # dropped one at a time so neither can be a hidden crutch (NOTES.md D-004).
         ("txn_only", feature_columns({"transaction"}), False),
         ("txn+session", feature_columns({"transaction", "session"}), False),
         ("all_levels", feature_columns(all_levels), True),
@@ -196,77 +244,100 @@ def main(argv: list[str] | None = None) -> int:
          feature_columns(all_levels, drop=CADENCE_SIGNAL_FEATURES), False),
     ]
 
+    print("train")
     ablation: list[dict[str, Any]] = []
     headline: dict[str, Any] | None = None
+    headline_unseen: dict[str, Any] | None = None
     headline_fit = None
     headline_threshold = 0.5
+    distribution: dict[str, Any] = {}
+    unseen_scores = np.array([])
 
     for name, columns, is_headline in variants:
-        fitted = fit_gbm(train, test, columns, name, seed=seed, measure_latency=is_headline)
+        fitted = fit_gbm(train, seen_test, columns, name, seed=seed, measure_latency=is_headline)
         threshold, _ = choose_threshold(y_train, fitted.scores_train, amounts_train, review_cost)
         metrics = compute_metrics(
-            y_test, fitted.scores_test, threshold,
-            review_cost_inr=review_cost, amounts=amounts_test,
+            y_seen, fitted.scores_test, threshold,
+            review_cost_inr=review_cost, amounts=amounts_seen,
             latency_p50_ms=fitted.latency_p50_ms, latency_p99_ms=fitted.latency_p99_ms,
         )
         add_lift(metrics, baseline_metrics)
         ablation.append({"variant": name, "metrics": metrics})
+
         if is_headline:
             headline, headline_fit, headline_threshold = metrics, fitted, threshold
+            distribution = score_distribution(y_seen, fitted.scores_test, threshold)
+            # Same fitted model, scored against the held-out families. Refitting for the
+            # unseen set would defeat the entire point of holding them out.
+            unseen_scores = fitted.model.predict_proba(
+                unseen_test.reindex(columns=columns).to_numpy(dtype=np.float64, na_value=np.nan)
+            )[:, 1]
+            headline_unseen = compute_metrics(
+                y_unseen, unseen_scores, threshold,
+                review_cost_inr=review_cost, amounts=amounts_unseen,
+            )
+            add_lift(headline_unseen, baseline_metrics)
 
-    assert headline is not None and headline_fit is not None
+    assert headline is not None and headline_fit is not None and headline_unseen is not None
 
-    print("\nresults, all at the stated prevalence, evaluated on the unmodified distribution")
+    print("\nresults, evaluated on the unmodified distribution")
     print("-" * 74)
-    print(format_table("baseline (LR, transaction only)", baseline_metrics))
+    print(format_table("BASELINE xgboost tuned, txn only", baseline_metrics))
+    print(format_table("floor: logistic regression", floor_metrics))
+    print("-" * 74)
     for row in ablation:
         print(format_table(row["variant"], row["metrics"]))
     print("-" * 74)
-    print(f"operating threshold {headline_threshold:.4f}, chosen on train by net value")
-    if headline["scoring_latency_p50_ms"]:
-        print(f"scoring latency p50 {headline['scoring_latency_p50_ms']}ms · "
-              f"p99 {headline['scoring_latency_p99_ms']}ms")
+    print(format_table("all_levels on HELD-OUT families", headline_unseen))
+    print("-" * 74)
+    print(f"operating threshold {headline_threshold:.6f}, chosen on train by net value")
 
-    # Detection is scored per attack instance. Row-weighted recall lets one high-volume
-    # vector speak for the whole ledger: a sweep contributes twenty rows, an authorised
-    # push payment contributes one.
+    print("\nscore distribution, seen test")
+    for key, value in distribution.items():
+        print(f"  {key:26s} {value}")
+    if distribution.get("fraud_above_legit_p99", 0) > 0.9:
+        print("  NOTE: nearly every fraudulent row outscores 99% of legitimate traffic.")
+        print("        That is a statement about attack realism, not detector quality.")
+
     instance_recall, per_vector, missed_instances = instance_detection(
-        y_test,
-        headline_fit.scores_test,
-        test["instance_id"].to_numpy(),
-        test["vector_id"].to_numpy(),
-        headline_threshold,
+        y_seen, headline_fit.scores_test, seen_test["instance_id"].to_numpy(),
+        seen_test["vector_id"].to_numpy(), headline_threshold,
+    )
+    unseen_recall, unseen_per_vector, _ = instance_detection(
+        y_unseen, unseen_scores, unseen_test["instance_id"].to_numpy(),
+        unseen_test["vector_id"].to_numpy(), headline_threshold,
     )
     per_vector_rows = per_vector_row_detection(
-        y_test, headline_fit.scores_test, test["vector_id"].to_numpy(), headline_threshold
+        y_seen, headline_fit.scores_test, seen_test["vector_id"].to_numpy(), headline_threshold
     )
     row_rate = {r["vector_id"]: r for r in per_vector_rows}
 
-    print(f"\nper vector (test window) - instance detection, row detection in brackets")
+    print("\nper vector, instance detection [rows in brackets]")
     for row in per_vector:
-        rows_for_vector = row_rate.get(row["vector_id"], {"n_detected": 0, "n_instances": 0})
-        print(f"  {row['vector_id']}  {row['n_detected']:>3}/{row['n_instances']:<3} instances "
+        rows_for = row_rate.get(row["vector_id"], {"n_detected": 0, "n_instances": 0})
+        print(f"  {row['vector_id']}  {row['n_detected']:>4}/{row['n_instances']:<4} instances "
               f"{row['detection_rate']:>6.1%}   "
-              f"[{rows_for_vector['n_detected']}/{rows_for_vector['n_instances']} rows]")
-    print(f"  overall instance recall {instance_recall:.1%} over "
+              f"[{rows_for['n_detected']}/{rows_for['n_instances']} rows]")
+    print(f"  SEEN instance recall   {instance_recall:.1%} over "
           f"{sum(r['n_instances'] for r in per_vector)} instances")
+    for row in unseen_per_vector:
+        row["holdout"] = "family"
+        print(f"  {row['vector_id']}  {row['n_detected']:>4}/{row['n_instances']:<4} instances "
+              f"{row['detection_rate']:>6.1%}   HELD OUT, never trained on")
+    print(f"  UNSEEN instance recall {unseen_recall:.1%} over "
+          f"{sum(r['n_instances'] for r in unseen_per_vector)} instances")
 
-    # --- misses --------------------------------------------------------------
-    # A miss is an instance that never raised an alert, not a row that scored low. The
-    # representative row for each missed instance is its highest-scoring one - the closest
-    # the detector came.
     missed_set = set(missed_instances)
-    test_instances = test["instance_id"].to_numpy()
+    test_instances = seen_test["instance_id"].to_numpy()
     representative: dict[str, int] = {}
-    for pos in np.flatnonzero(y_test == 1):
+    for pos in np.flatnonzero(y_seen == 1):
         instance = test_instances[pos]
         if instance in missed_set:
             current = representative.get(instance)
             if current is None or headline_fit.scores_test[pos] > headline_fit.scores_test[current]:
                 representative[instance] = int(pos)
     missed = np.array(sorted(representative.values()), dtype=int)
-    shap_rows = top_contributions(headline_fit, test, missed[:400])
-    attacks = json.loads((FIXTURES_DIR / "attacks.fixture.json").read_text(encoding="utf-8"))
+    shap_rows = top_contributions(headline_fit, seen_test, missed[:400])
     chain_by_vector = {v["vector_id"]: v["chain"] for v in attacks["vectors"]}
 
     misses_payload = {
@@ -274,14 +345,14 @@ def main(argv: list[str] | None = None) -> int:
         "run_id": f"{cfg['run']['run_id_prefix']}-g0-{seed}",
         "generation": 0,
         "threshold": round(float(headline_threshold), 6),
-        "prevalence": round(float(y_test.mean()), 6),
+        "prevalence": round(float(y_seen.mean()), 6),
         "misses": [
             {
-                "instance_id": str(test.iloc[int(pos)]["instance_id"]),
-                "vector_id": str(test.iloc[int(pos)]["vector_id"]),
-                "chain": chain_by_vector.get(str(test.iloc[int(pos)]["vector_id"]), []),
+                "instance_id": str(seen_test.iloc[int(pos)]["instance_id"]),
+                "vector_id": str(seen_test.iloc[int(pos)]["vector_id"]),
+                "chain": chain_by_vector.get(str(seen_test.iloc[int(pos)]["vector_id"]), []),
                 "primitives_present": chain_by_vector.get(
-                    str(test.iloc[int(pos)]["vector_id"]), []
+                    str(seen_test.iloc[int(pos)]["vector_id"]), []
                 ),
                 "score": round(float(headline_fit.scores_test[int(pos)]), 6),
                 "level_scores": {"transaction": None, "session": None, "graph": None},
@@ -290,11 +361,9 @@ def main(argv: list[str] | None = None) -> int:
             }
             for pos, shap in zip(missed[:400], shap_rows)
         ],
-        "per_vector": per_vector,
+        "per_vector": per_vector + unseen_per_vector,
     }
     validate("misses", misses_payload)
-
-    detection_rate = instance_recall
 
     coverage = coverage_report(attacks["vectors"])
     manifest = {
@@ -307,9 +376,14 @@ def main(argv: list[str] | None = None) -> int:
         "prevalence": round(float(ledger.meta["prevalence_actual"]), 6),
         "is_fixture": False,
         "baseline": {
-            "name": cfg["baseline"]["name"],
-            "features": baseline_cols,
+            "name": "xgboost_tuned_transaction_only",
+            "features": txn_cols,
             "metrics": baseline_metrics,
+        },
+        "baseline_floor": {
+            "name": "logistic_regression_transaction_only",
+            "features": txn_cols,
+            "metrics": floor_metrics,
         },
         "generations": [{
             "generation": 0,
@@ -317,12 +391,9 @@ def main(argv: list[str] | None = None) -> int:
             "n_transactions": int(len(ledger.transactions)),
             "n_fraud": int(ledger.transactions["is_fraud"].sum()),
             "metrics_seen": headline,
-            # No families are held out yet - that is Phase 3. Reporting the seen numbers
-            # in both slots would be a lie, so unseen carries the same object and the
-            # walkthrough says "not yet measured" until it is.
-            "metrics_unseen": headline,
+            "metrics_unseen": headline_unseen,
             "ablation": ablation,
-            "detection_rate": round(detection_rate, 4),
+            "detection_rate": round(instance_recall, 4),
             "n_chains_proposed": 0,
             "n_chains_rejected": 0,
         }],
@@ -353,17 +424,15 @@ def main(argv: list[str] | None = None) -> int:
     validate("run_manifest", manifest)
 
     print("\ncoverage")
-    print(f"  {coverage['primitives_used']}/{coverage['primitives_total']} primitives · "
-          f"{coverage['stage_transitions_used']}/{coverage['stage_transitions_possible']} "
-          f"stage transitions · {coverage['grid_cells_populated']}/{coverage['grid_cells_total']} "
-          f"grid cells · {len(coverage['channels_covered'])}/7 channels")
-    print(f"  chain space searched by the strategist: {coverage['valid_chain_space']:,}")
+    print(f"  {coverage['primitives_used']}/{coverage['primitives_total']} primitives, "
+          f"{coverage['grid_cells_populated']}/{coverage['grid_cells_total']} grid cells, "
+          f"{len(coverage['channels_covered'])}/7 channels")
 
     if args.no_publish:
         return 0
 
     PUBLISHED.mkdir(parents=True, exist_ok=True)
-    score_lookup = dict(zip(test["transaction_id"], headline_fit.scores_test))
+    score_lookup = dict(zip(seen_test["transaction_id"], headline_fit.scores_test))
     slice_payload = _demo_slice(ledger, score_lookup, cfg["simulation"]["demo_slice_rows"])
     slice_payload["threshold"] = round(float(headline_threshold), 6)
 
@@ -371,15 +440,13 @@ def main(argv: list[str] | None = None) -> int:
         ("run_manifest.json", manifest),
         ("misses.g0.json", misses_payload),
         ("demo_slice.json", slice_payload),
+        ("score_distribution.json", distribution),
     ):
         path = PUBLISHED / name
         path.write_text(json.dumps(payload, separators=(",", ":")) + "\n", encoding="utf-8")
-        print(f"  wrote {path.relative_to(ARTIFACTS_DIR.parent)} "
-              f"({path.stat().st_size / 1024:.0f} KB)")
+        print(f"  wrote {path.name} ({path.stat().st_size / 1024:.0f} KB)")
 
-    (PUBLISHED / "attacks.json").write_text(
-        json.dumps(attacks, indent=2) + "\n", encoding="utf-8"
-    )
+    (PUBLISHED / "attacks.json").write_text(json.dumps(attacks, indent=2) + "\n", encoding="utf-8")
     ledger.write_parquet(ARTIFACTS_DIR / "ledger")
     return 0
 

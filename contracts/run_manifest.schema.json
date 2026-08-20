@@ -20,6 +20,10 @@
       "description": "True for committed fixture data. The prototype renders a visible FIXTURE badge when set, so no screenshot of fake numbers can be mistaken for a result."
     },
     "baseline": { "$ref": "#/$defs/baseline" },
+    "baseline_floor": {
+      "$ref": "#/$defs/baseline",
+      "description": "Optional weaker comparator, reported alongside and clearly labelled. Added 2026-08-20: lift over a logistic regression at 0.079 precision is a number that collapses the moment a judge asks what the baseline was, so the headline baseline is a tuned model and this is the floor beneath it."
+    },
     "generations": {
       "type": "array",
       "minItems": 1,
