@@ -327,10 +327,37 @@ per transaction — 300k in ~4.5 minutes, so a full 2M run is roughly half an ho
 tolerable as a one-off but not for iteration; if Phase 3 needs repeated full-scale runs it
 gets vectorised.
 
+## D-022 — Right-censoring at the observation boundary
+
+The horizon added in D-019 fixed one bias and created a worse one. With no attacks
+starting in the final fifty days, the time-ordered split had almost no fraud in its test
+half: test prevalence fell to 0.079% with two instances, and the detector reported
+AUC-PR 1.000 and a lift of +16,293%. A number that absurd is a gift - it is obvious
+enough to investigate rather than believe.
+
+Attack start times are uniform across the window again. Chains still in flight when the
+window closes are truncated by a single filter applied to both classes, which is what a
+real observation window does. Partially observed chains near the edge are realistic
+right-censoring, not a defect.
+
 ## Phase 2 results
 
-Measured, not estimated. 300k transactions, 25k accounts, seed 20260831. See the section
-below for the honest reading of what they are worth.
+300k transactions, 25k accounts, seed 20260831, prevalence 0.924% in the test window.
+Baseline is logistic regression on transaction fields only.
+
+| Variant | Precision | Recall | F1 | AUC-PR | Alert rate | Lift (AUC-PR) |
+|---|---|---|---|---|---|---|
+| baseline | 0.079 | 0.885 | 0.145 | 0.152 | 10.37% | — |
+| transaction only | 0.754 | 0.876 | 0.810 | 0.912 | 1.07% | +501% |
+| **transaction + session** | **0.822** | **0.949** | **0.881** | **0.964** | **1.07%** | **+534%** |
+| minus coercion signal | 0.825 | 0.949 | 0.883 | 0.961 | 1.06% | +533% |
+| minus cadence signal | 0.805 | 0.936 | 0.866 | 0.964 | 1.07% | +535% |
+
+Instance recall 94.9% over 39 instances. Scoring latency p50 3.2ms, p99 5.9ms - inside a
+payment authorisation budget. Operating threshold 0.0029, chosen on train by net value.
+
+Per vector, instance detection: V001 5/5, V002 15/15, V003 7/9, V004 6/6, V005 4/4. The
+only vector the detector misses is the coercion one, which is the expected shape.
 
 ## What these numbers are NOT yet worth
 

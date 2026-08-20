@@ -498,15 +498,16 @@ class World:
         base = _amount_for(self.rng, mcc, trait)
         return float(base * self.rng.uniform(*factor))
 
-    def when(self, horizon_days: float = 50.0) -> datetime:
-        """Start time for an attack instance, leaving room for the chain to finish.
+    def when(self) -> datetime:
+        """Start time for an attack instance, uniform across the observation window.
 
-        Sampling uniformly across the whole window pushed the later stages of long chains
-        past the end of legitimate traffic, so the tail of the ledger was disproportionately
-        fraudulent and transaction_id ordering alone predicted the label at AUC 0.60. The
-        horizon keeps every chain inside the same window as ordinary activity.
+        An earlier attempt reserved a horizon at the end so that long chains would finish
+        inside the window. That fixed one bias and created a worse one: with no attacks
+        starting in the final fifty days, the time-ordered split had almost no fraud in its
+        test half. Right-censoring at the boundary is the correct treatment and it is
+        applied to both classes by a single filter in :func:`simulate`.
         """
-        day = float(self.rng.uniform(0, max(1.0, self.days - horizon_days)))
+        day = float(self.rng.uniform(0, self.days))
         return self.start + timedelta(days=day)
 
     def victim(self) -> AccountTrait:
@@ -947,6 +948,20 @@ def simulate(
     txns, sessions, events_df, edges = em.finalise()
     txns["is_fraud"] = txns["is_fraud"].astype(bool)
 
+    # Right-censoring at the observation boundary. A real dataset is a window: chains still
+    # in flight when the window closes are partially observed, and that is a property of
+    # the observation rather than of the fraud. One filter, applied to both classes by the
+    # same rule, so it cannot become a provenance asymmetry.
+    window_end = start + timedelta(days=days)
+    keep = txns["timestamp"] <= window_end
+    censored = int((~keep).sum())
+    txns = txns[keep].reset_index(drop=True)
+    live_sessions = sessions["started_at"] <= window_end
+    sessions = sessions[live_sessions].reset_index(drop=True)
+    events_df = events_df[events_df["session_id"].isin(set(sessions["session_id"]))]
+    txns.loc[~txns["session_id"].isin(set(sessions["session_id"])), "session_id"] = None
+    edges = edges[edges["timestamp"] <= window_end].reset_index(drop=True)
+
     return Ledger(
         accounts=accounts, devices=devices, merchants=merchants,
         transactions=txns, sessions=sessions, session_events=events_df, graph_edges=edges,
@@ -955,6 +970,7 @@ def simulate(
             "prevalence_target": prevalence,
             "prevalence_actual": float(txns["is_fraud"].mean()),
             "attack_instances": instances,
+            "rows_censored_at_window_end": censored,
             "window_start": start.isoformat(),
             "window_days": days,
             "vectors": [v["vector_id"] for v in vector_cycle],
