@@ -27,7 +27,7 @@ STAGES: list[tuple[str, list[str] | None]] = [
     ("train detector and evaluate", None),  # Phase 3
     ("run the adversarial loop", None),  # Phase 4
     ("publish artefacts for the prototype", None),  # Phase 5
-    ("build the walkthrough document", None),  # Phase 6
+    ("build the walkthrough document", [sys.executable, "scripts/build_walkthrough.py"]),
 ]
 
 
