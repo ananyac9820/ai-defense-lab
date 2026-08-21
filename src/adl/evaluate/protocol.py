@@ -41,11 +41,22 @@ class GenerationResult:
     n_vectors: int
     split_note: str = ""
     extra: dict[str, Any] = field(default_factory=dict)
+    # Kept so the caller can rescore this generation's model against a frame it did not
+    # produce. That is what makes a fixed-evaluation-set series possible without
+    # simulating anything twice.
+    model: Any = None
+    columns: list[str] = field(default_factory=list)
+    seen_frame: Any = None
+    threshold_used: float = 0.5
 
 
-def _score(model, frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
+def score_frame(model, frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
+    """Score an arbitrary frame with a fitted model. Used for cross-generation rescoring."""
     matrix = frame.reindex(columns=columns).to_numpy(dtype=np.float64, na_value=np.nan)
     return model.predict_proba(matrix)[:, 1]
+
+
+_score = score_frame
 
 
 def evaluate_generation(
@@ -171,6 +182,10 @@ def evaluate_generation(
     }
 
     return GenerationResult(
+        model=fitted.model,
+        columns=columns,
+        seen_frame=seen_test,
+        threshold_used=float(threshold),
         generation=generation,
         metrics_seen=metrics_seen,
         metrics_unseen=metrics_unseen,

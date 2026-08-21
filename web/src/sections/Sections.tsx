@@ -683,19 +683,38 @@ export function Helix() {
       <div className="mt-7 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
         <div>
           <div className="tag mb-2">detection rate per generation, flat view</div>
+          {/* Three series, because the obvious one cannot be read on its own. The current
+              attack set changes composition every generation, so its line mixes "the
+              detector improved" with "the mix got easier". The fixed set holds the
+              population constant; the new-vectors line asks whether the attacker is still
+              getting through. */}
           <LinePlot
             xLabels={gens.map((g) => `G${g.generation}`)}
             series={[
               {
-                label: attacker ? 'evaded' : 'detected',
-                values: gens.map((g) => (attacker ? 1 - (g.detection_rate ?? 0) : g.detection_rate ?? 0)),
+                label: 'fixed evaluation set',
+                values: gens.map((g) => g.detection_rate_fixed_set ?? g.detection_rate ?? 0),
                 spot: true,
               },
-              { label: 'recall seen', values: gens.map((g) => g.metrics_seen.recall), dashed: true },
-              { label: 'recall unseen', values: gens.map((g) => g.metrics_unseen.recall), dashed: true },
+              {
+                label: 'new vectors only',
+                values: gens.map((g) => g.detection_rate_new_vectors ?? NaN),
+                dashed: true,
+              },
+              {
+                label: 'current attack set',
+                values: gens.map((g) => g.detection_rate ?? 0),
+                dashed: true,
+              },
             ]}
             height={230}
           />
+          <div className="tag mt-2 max-w-[62ch] normal-case tracking-[0.02em]">
+            Solid: generation 0's attack population scored by every generation's model, so
+            movement means the detector moved. Dashed pale: only the vectors that
+            generation introduced. Dashed dark: whatever the attack set happened to be
+            that round, which is the line that cannot be read as a trend.
+          </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
             {gens.map((g) => (

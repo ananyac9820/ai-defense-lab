@@ -148,6 +148,10 @@ export interface Generation {
   metrics_unseen: Metrics;
   ablation?: { variant: string; metrics: Metrics }[];
   detection_rate: number | null;
+  /** Same evaluation population every generation. Movement here means the detector moved. */
+  detection_rate_fixed_set?: number | null;
+  /** Only the vectors this generation introduced. Answers whether the attacker got through. */
+  detection_rate_new_vectors?: number | null;
   n_chains_proposed: number | null;
   n_chains_rejected: number | null;
 }

@@ -93,7 +93,9 @@
             }
           }
         },
-        "detection_rate": { "type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "Headline for the Loop Helix: fraction of fraudulent instances caught at the operating threshold." },
+        "detection_rate": { "type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "Fraction of fraudulent instances caught at the operating threshold, over whatever the attack set is at this generation. Changes composition every round, so it cannot be read as a trend on its own." },
+        "detection_rate_fixed_set": { "type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "This generation's model scored against generation 0's evaluation population. Constant population, so movement here means the detector changed rather than the mix." },
+        "detection_rate_new_vectors": { "type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "Detection over only the vectors this generation introduced. Answers whether the attacker is still getting through after the detector has seen its last idea." },
         "n_chains_proposed": { "type": ["integer", "null"], "minimum": 0 },
         "n_chains_rejected": { "type": ["integer", "null"], "minimum": 0, "description": "S7.2 says the rejection rate is itself an interesting number." }
       }

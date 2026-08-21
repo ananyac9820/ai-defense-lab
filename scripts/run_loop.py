@@ -31,7 +31,8 @@ from adl.common.config import config_hash, load_config
 from adl.common.contracts import validate
 from adl.common.paths import ARTIFACTS_DIR, FIXTURES_DIR
 from adl.common.seeds import rng_for
-from adl.evaluate.protocol import evaluate_generation
+from adl.evaluate.metrics import instance_detection
+from adl.evaluate.protocol import evaluate_generation, score_frame
 from adl.generate.simulator import simulate
 from adl.loop.strategist import propose
 from adl.loop.validation import validate_proposals
@@ -56,7 +57,14 @@ def main(argv: list[str] | None = None) -> int:
 
     generations: list[dict[str, Any]] = []
     curve: list[float] = []
+    fixed_curve: list[float] = []
+    fresh_curve: list[float | None] = []
     baseline_metrics: dict[str, Any] | None = None
+    # Generation 0's test frame, frozen. Every later model is scored against it, because
+    # that is the only way to ask "did the detector harden" without the answer being
+    # polluted by the attack mix changing underneath the question.
+    fixed_frame = None
+    fixed_columns: list[str] = []
 
     for g in range(args.generations):
         print("=" * 74)
@@ -80,8 +88,42 @@ def main(argv: list[str] | None = None) -> int:
             baseline_metrics = dict(result.metrics_seen)
 
         curve.append(result.instance_recall)
+
+        # --- series 1: the same evaluation population, every generation --------------
+        if fixed_frame is None:
+            fixed_frame = result.seen_frame.copy()
+            fixed_columns = list(result.columns)
+        fixed_scores = score_frame(result.model, fixed_frame, fixed_columns)
+        fixed_recall, _, _ = instance_detection(
+            fixed_frame["is_fraud"].to_numpy(), fixed_scores,
+            fixed_frame["instance_id"].to_numpy(), fixed_frame["vector_id"].to_numpy(),
+            result.threshold_used,
+        )
+        fixed_curve.append(fixed_recall)
+
+        # --- series 2: only the vectors this generation introduced -------------------
+        # The more interesting question. If freshly mutated vectors are caught at a lower
+        # rate than the fixed set, the attacker is staying ahead, and that is a finding
+        # whichever direction it lands in.
+        fresh_ids = {v["vector_id"] for v in vectors if v.get("generation") == g}
+        fresh_recall = None
+        if fresh_ids:
+            frame = result.seen_frame
+            fresh = frame[frame["vector_id"].isin(fresh_ids) | (frame["is_fraud"] == 0)]
+            if fresh["is_fraud"].sum() > 0:
+                fresh_recall, _, _ = instance_detection(
+                    fresh["is_fraud"].to_numpy(),
+                    score_frame(result.model, fresh, result.columns),
+                    fresh["instance_id"].to_numpy(), fresh["vector_id"].to_numpy(),
+                    result.threshold_used,
+                )
+        fresh_curve.append(fresh_recall)
+
         print(f"  {result.split_note}")
-        print(f"  seen instance recall {result.instance_recall:.1%}"
+        print(f"  fixed-set recall   {fixed_recall:.1%}"
+              + (f"   new-vector recall {fresh_recall:.1%}" if fresh_recall is not None
+                 else "   new-vector recall n/a"))
+        print(f"  current-set recall {result.instance_recall:.1%}"
               f"   AUC-PR {result.metrics_seen['auc_pr']:.3f}"
               f"   at {result.metrics_seen['prevalence']:.3%} prevalence")
         if result.unseen_recall is not None:
@@ -121,23 +163,45 @@ def main(argv: list[str] | None = None) -> int:
             **({"metrics_unseen_composition": result.metrics_composition}
                if result.metrics_composition else {}),
             "detection_rate": round(result.instance_recall, 4),
+            "detection_rate_fixed_set": round(fixed_recall, 4),
+            **({"detection_rate_new_vectors": round(fresh_recall, 4)}
+               if fresh_recall is not None else {}),
             "n_chains_proposed": proposed,
             "n_chains_rejected": rejected,
         })
 
     print("=" * 74)
     print("detection rate per generation")
-    for g, rate in enumerate(curve):
-        bar = "#" * int(rate * 50)
-        print(f"  G{g}  {rate:6.1%}  {bar}")
+    print("  gen   fixed set   new vectors   current set")
+    for g in range(len(curve)):
+        fresh = fresh_curve[g]
+        fresh_text = f"{fresh:9.1%}" if fresh is not None else "      n/a"
+        print(f"  G{g}    {fixed_curve[g]:8.1%}  {fresh_text}      {curve[g]:8.1%}"
+              + "  " + "#" * int(fixed_curve[g] * 28))
 
-    movement = max(curve) - min(curve)
-    if movement < 0.02:
-        print("\n  The curve is flat. Per S7.3 that is reported as a finding about detector")
-        print("  robustness rather than escalated until it bends.")
+    # Movement is judged on the fixed set, because that is the only series where the
+    # evaluated population is constant and a change can therefore mean something.
+    spread = max(fixed_curve) - min(fixed_curve)
+    print()
+    if spread < 0.03:
+        print(f"  Fixed-set series is flat: {spread:.1%} spread over {len(fixed_curve)} generations.")
+        print("  Per S7.3 that is a finding about detector robustness, not something to")
+        print("  escalate until it bends.")
     else:
-        direction = "rising" if curve[-1] > curve[0] else "falling"
-        print(f"\n  Curve moved {movement:.1%} across {len(curve)} generations, {direction}.")
+        direction = "hardened" if fixed_curve[-1] > fixed_curve[0] else "degraded"
+        print(f"  Fixed-set series {direction} by {abs(fixed_curve[-1]-fixed_curve[0]):.1%}.")
+
+    measured = [f for f in fresh_curve if f is not None]
+    if measured:
+        later = fixed_curve[1:] or fixed_curve
+        gap = sum(measured) / len(measured) - sum(later) / len(later)
+        print(f"  New vectors are caught {gap:+.1%} relative to the fixed set on average.")
+        if gap < -0.05:
+            print("  The attacker is finding gaps faster than the detector closes them.")
+        elif gap > 0.05:
+            print("  Fresh mutations are EASIER to catch than the original set.")
+        else:
+            print("  No measurable difference between fresh mutations and the original set.")
 
     manifest = {
         "contract_version": "0.1.0",
