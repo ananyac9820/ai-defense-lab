@@ -42,10 +42,34 @@ def test_no_single_vector_dominates_the_fraud_rows(ledger) -> None:
     assert share.iloc[0] < 0.62, f"top vector holds {share.iloc[0]:.0%} of fraud rows:\n{share}"
 
 
-def test_instances_are_spread_across_all_five_vectors(ledger) -> None:
+def test_every_authored_vector_produces_instances(ledger) -> None:
+    """Every vector in attacks.json must actually emit, and the count is not hardcoded.
+
+    This previously asserted a literal five and went stale the moment three vectors were
+    added, which is how it stayed red on CI for three commits. The literal was also
+    checking nothing useful. The bug it should have caught was the retired registry
+    filter, which let three authored vectors be counted in the taxonomy, validated
+    against the contract, and emit nothing whatsoever. Comparing against the authored set
+    catches exactly that, and cannot go stale.
+    """
+    import json
+
+    from adl.common.paths import FIXTURES_DIR
+
+    authored = {
+        v["vector_id"]
+        for v in json.loads(
+            (FIXTURES_DIR / "attacks.fixture.json").read_text(encoding="utf-8")
+        )["vectors"]
+    }
     fraud = ledger.transactions[ledger.transactions["is_fraud"]]
     per_vector = fraud.groupby("vector_id")["instance_id"].nunique()
-    assert len(per_vector) == 5
+
+    silent = authored - set(per_vector.index)
+    assert not silent, (
+        f"authored but emitted nothing: {sorted(silent)}. A vector counted in the coverage "
+        f"claim that produces no data inflates every number depending on it."
+    )
     assert per_vector.min() >= 3, f"too few instances of some vectors:\n{per_vector}"
 
 
