@@ -612,3 +612,82 @@ now includes a digest of vector ids, chains, parameters and holdout flags.
 Both belong in the walkthrough's methodology section. A cache that returns stale results
 and a filter that drops vectors are exactly the failures that produce numbers for code
 that never ran.
+
+---
+
+# Full-scale confirmation, 2M transactions (21 Aug 2026)
+
+1,998,745 transactions, 40,000 accounts, 19,481 fraudulent (0.975%). Test window
+prevalence 0.844%, with 241 seen instances, 83 held-out family instances and 23 held-out
+composition instances. Eight vectors, three holdout regimes.
+
+## The ablation
+
+| Variant | Precision | Recall | AUC-PR | Lift vs tuned baseline |
+|---|---|---|---|---|
+| BASELINE xgboost tuned, txn only | 0.681 | 0.810 | 0.829 | reference |
+| floor: logistic regression | 0.072 | 0.747 | 0.178 | -79% |
+| txn only | 0.772 | 0.816 | 0.862 | +4% |
+| txn + session | 0.746 | 0.886 | 0.912 | +10% |
+| **all three levels** | 0.667 | **0.965** | **0.967** | **+17%** |
+| all levels minus graph | 0.746 | 0.886 | 0.912 | +10% |
+| all levels minus coercion signal | 0.639 | 0.974 | 0.976 | +18% |
+| all levels minus cadence signal | 0.626 | 0.976 | 0.977 | +18% |
+
+The graph level contributes **+0.055 AUC-PR and +7.9 points of recall**.
+`all_levels_minus_graph` reproduces `txn+session` to four decimals for the third run
+running, which is what keeps the claim falsifiable.
+
+The tuned baseline is stronger at this scale (AUC-PR 0.829 against 0.801 at 250k), so the
+headline lift falls from +22% to **+17%**. Reporting the smaller number.
+
+## D-032 — V006 confirmed. The boundary is the extraction rail.
+
+| Held out | What is novel | Instances | Detection |
+|---|---|---|---|
+| V004 SIM-swap takeover | acquisition and establishment | 27 | 100% |
+| V007 hijacked agent | two unseen primitives, purchase rail | 35 | 100% |
+| **V006 merchant collusion** | **unseen extraction rail** | **21** | **33.3%** |
+| V008 composition | seen primitives, unseen order | 23 | 100% |
+
+Seen instance recall 99.6% over 241 instances. Held-out family recall 83.1%, entirely
+because of V006. Held-out composition recall 100%.
+
+At 300k V006 detected at 20% on 5 instances; at 2M it is 33.3% on 21. The finding holds
+and the number moved the way a small-sample number should.
+
+## D-033 — AUC-PR is not comparable across the holdout slices
+
+The held-out slices report AUC-PR 0.479 and 0.416 against 0.967 seen, and most of that
+gap is an artefact. Each held-out slice contains one or two vectors' fraud against the
+same legitimate traffic, so its prevalence is 0.104% and 0.098% against 0.844% for seen.
+AUC-PR moves with prevalence by construction.
+
+**Instance recall is the comparable figure** and it is what the write-up leads with:
+99.6% seen, 83.1% held-out family, 100% held-out composition. The AUC-PR values are
+reported with their prevalence attached and are not set against each other.
+
+Catching this matters more than the numbers do: quoting 0.479 against 0.967 would have
+been a real generalisation gap claim built mostly on a denominator.
+
+## D-034 — Both behavioural signals are now slightly negative
+
+Removing the coercion signal moves AUC-PR from 0.967 to 0.976. Removing the cadence
+signal moves it to 0.977. At 1,445 fraudulent rows both have ample support and both are
+very slightly harmful.
+
+Reported as a negative finding, unchanged and untuned. The honest reading is that
+transaction, velocity and graph evidence already carry everything these two contribute,
+and the session-level behavioural columns add variance without adding information at this
+prevalence.
+
+## Separability at 2M
+
+    fraud_p05  0.0664   legit_p99    0.0052   fraud_above_legit_p99  0.9785
+    fraud_p50  1.0      legit_p99_9  0.2577   fraud_in_overlap_band  0.0734
+                                              separation_gap        -0.1913
+
+The overlap corridor is real: separation_gap is negative and 7.3% of fraud scores below
+the 99.9th percentile of legitimate traffic. `fraud_above_legit_p99` reads 0.978 here
+against 0.913 at 300k, so that particular statistic is scale-sensitive and the agreed
+0.85-0.95 band only means something at a fixed scale. Not chasing it further.

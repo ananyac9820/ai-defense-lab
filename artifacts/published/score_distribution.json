@@ -1,1 +1,1 @@
-{"n_fraud":1420,"fraud_p05":0.2212,"fraud_p50":1.0,"fraud_p95":1.0,"legit_p50":0.0,"legit_p99":0.0033,"legit_p99_9":0.1899,"threshold":0.984786,"fraud_above_legit_p99":0.988,"fraud_within_2x_threshold":1.0}
+{"n_fraud":1445,"fraud_p05":0.0664,"fraud_p50":1.0,"fraud_p95":1.0,"legit_p50":0.0,"legit_p99":0.0052,"legit_p99_9":0.2577,"threshold":0.025797,"fraud_above_legit_p99":0.9785,"fraud_in_overlap_band":0.0734,"separation_gap":-0.1913}
