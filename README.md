@@ -75,6 +75,23 @@ cd web && npm install && npm run dev
 clean clone it regenerates every committed artefact byte for byte from the seed in
 `config.yaml`.
 
+### How long a full reproduction takes
+
+| Stage | Time |
+|---|---|
+| `scripts/reproduce.py` (contracts, fixtures, tests, walkthrough, audit) | about 4 minutes |
+| `scripts/run_pipeline.py --transactions 2000000` (the headline numbers) | **about 35 minutes** |
+| `scripts/run_loop.py --generations 5` (the loop curve) | about 35 minutes |
+
+**The two-million-row simulate is roughly half an hour and it is the slowest thing here.**
+It prints progress every 5% with a running estimate, so a silent terminal means something
+is wrong rather than something is slow. Add `--cache-ledger` and a second run of the same
+seed and size skips the simulate entirely.
+
+The ledger itself is not committed. It is 119MB of data that regenerates exactly from one
+seed, and a repository that ships its own outputs cannot demonstrate that they reproduce.
+Only the derived artefacts the prototype reads are in git.
+
 ---
 
 ## Layout

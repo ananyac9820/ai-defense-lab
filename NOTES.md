@@ -783,3 +783,20 @@ band: 444,573 chains, the prevalence, pass-through accounts flagged, net value p
 instance recall, discriminator AUC. Figures went from 26px to 34px.
 
 Both 3D scenes are full-bleed within their sections rather than figures in a column.
+
+---
+
+# D-037 — The ledger cache is not committed (21 Aug 2026)
+
+119MB across seven Parquet files, the largest 54MB. Under GitHub's hard limit but over
+its warning threshold, and committing it would contradict the rule stated in the README
+and in D-006: the ledger stays out of git because it regenerates exactly from one seed,
+and a repository that ships its own outputs cannot demonstrate that they reproduce.
+
+Taking the conservative option. Instead:
+
+- The simulator prints progress every 5% of the behaviour layer with a running estimate,
+  because a reproduction step that prints nothing for thirty minutes reads as hung and a
+  judge who kills it at minute ten concludes the repository is broken.
+- The README carries a table of stage runtimes with the 35-minute simulate called out.
+- `--cache-ledger` makes the second run of the same seed and size skip the simulate.
