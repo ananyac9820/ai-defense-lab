@@ -85,7 +85,7 @@ export function Constellation() {
                   <button
                     onClick={() => selectVector(v.vector_id)}
                     className="hit group flex w-full items-baseline gap-4 py-3 text-left"
-                    style={{ color: on ? 'var(--spot)' : undefined }}
+                    style={{ color: on ? 'var(--spot-sm)' : undefined }}
                   >
                     <span className="mono w-8 text-[11px] text-[var(--fg-3)]">
                       {String(i + 1).padStart(2, '0')}
@@ -246,7 +246,7 @@ export function Ledger() {
             <text x={4} y={122} className="mono" fontSize={11} fill="var(--fg-2)">
               LEGITIMATE
             </text>
-            <text x={4} y={146} className="mono" fontSize={11} fill="var(--spot)">
+            <text x={4} y={146} className="mono" fontSize={11} fill="var(--spot-sm)">
               FRAUD, SCALED x8 TO BE VISIBLE AT ALL
             </text>
           </svg>
@@ -763,7 +763,7 @@ export function Helix() {
                 className="hit mono border px-2 py-1 text-[11px]"
                 style={{
                   borderColor: g.generation === current.generation ? 'var(--spot)' : 'var(--edge)',
-                  color: g.generation === current.generation ? 'var(--spot)' : 'var(--fg-2)',
+                  color: g.generation === current.generation ? 'var(--spot-sm)' : 'var(--fg-2)',
                 }}
               >
                 G{g.generation}

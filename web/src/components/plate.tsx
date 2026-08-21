@@ -103,7 +103,7 @@ export function Figure({
       <div className="mt-1 flex items-baseline gap-2">
         <span className="mono text-[34px] leading-none tracking-[-0.03em]">{value}</span>
         {lift != null && Number.isFinite(lift) && (
-          <span className="mono text-[12px]" style={{ color: 'var(--spot)' }}>
+          <span className="mono text-[12px]" style={{ color: 'var(--spot-sm)' }}>
             {lift >= 0 ? '+' : ''}
             {lift.toFixed(0)}% vs base
           </span>

@@ -906,3 +906,55 @@ build compiles, and the fail-safe lands correctly.
 
 NOT verified: parallax movement, draw-on progression, camera drift, count-up, stagger,
 reticle response. These need a real browser. Flagged rather than claimed.
+
+---
+
+# D-041 — Ground changed to deep green (21 Aug 2026)
+
+Paper became forest. Base #0d1f17, raised #142c20, text bone #e8ede6. Everything else
+stands: plates, hairline grid, mono labels, vector list, RUN plate, type family, motion
+system, hero numbers, layout.
+
+It was a token change, as expected. No component was restructured. Two places needed
+real values rather than variables and both were known:
+
+- WebGL materials cannot read CSS custom properties, so the three.js scenes take hex.
+  Those now come from `lib/palette.ts`, which is also where the CSS variables are set
+  from, so the two cannot drift.
+- Four inline hex values in App.tsx and store.ts were my own sloppiness from an earlier
+  pass. They are tokens now.
+
+`band-paper` and `band-ink` were renamed `band-base` and `band-raise`, since the old
+names no longer described anything.
+
+## The contrast audit demanded changes, as predicted
+
+**Vermilion #c43d18 measures 2.86:1 on the raised ground.** Unreadable. Every muted token
+had to be re-solved.
+
+    against #142c20, the harder of the two grounds
+      --fg     #e8ede6   12.5:1
+      --fg-2   #c9d2c6    9.6:1
+      --fg-3   #b4bdb2    7.7:1
+      defence  #17e88f    9.2:1   unchanged, needed nothing
+
+Attack needed splitting in two. #ff7a4d fixed the graphics but still read 6.6:1 as 11px
+text and 6.6:1 for the dark label sitting inside a vermilion fill, both short of the bar.
+So the fill is #ff8a5c, which carries its label at 7.4:1, and small text on the ground
+uses #ffa07a at 7.5:1. The hue did not move; only the value did, and only because the
+audit required it.
+
+Signal green on a green ground was the risk worth checking and it turned out fine: a
+saturated mint against a desaturated forest separates cleanly.
+
+## Audits after
+
+Both perspectives, 541 text nodes each:
+
+    defender   0 failures under 12px, smallest text 11px, nothing below 4.5:1 at any size
+    attacker   0 failures under 12px, smallest text 11px, nothing below 4.5:1 at any size
+    design     0 violations, 0 emoji, 0 em dashes
+
+The audit itself gained a fix: it was walking every element including `<head>`, so the
+document `<title>` was being scored as 1.23:1 body text. A false positive, now skipped.
+The title also contained the only remaining em dash on the page, which is gone.
