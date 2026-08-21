@@ -27,6 +27,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt, RGBColor
 
+from adl.common.config import source_digest
 from adl.common.contracts import coverage_report
 from adl.common.paths import ARTIFACTS_DIR, FIXTURES_DIR
 
@@ -438,17 +439,26 @@ def build() -> Path:
             gap = mean_fresh - mean_fixed
 
             doc.add_heading("6.3 What the loop actually showed", level=2)
-            if gap > 0.02:
+            floor_fresh = min(fresh_vals)
+            ceiling_reached = floor_fresh >= max(fixed_vals[1:] or fixed_vals)
+            if ceiling_reached or gap > 0.02:
                 callout(
                     doc,
                     "Adversarial search within a grammar hardens the defender against "
                     "variation, not against novelty.",
                 )
                 doc.add_paragraph(
-                    f"Across the run, vectors the strategist introduced were caught at "
-                    f"{mean_fresh * 100:.1f}% against {mean_fixed * 100:.1f}% for the fixed "
-                    f"evaluation set. Mutations are easier to detect than the originals, "
-                    f"not harder."
+                    f"Vectors the strategist introduced were caught at "
+                    f"{floor_fresh * 100:.1f}% in the worst generation and "
+                    f"{mean_fresh * 100:.1f}% on average, against "
+                    f"{mean_fixed * 100:.1f}% for the fixed evaluation set over the same "
+                    f"rounds. Mutations were never harder to detect than the originals."
+                )
+                doc.add_paragraph(
+                    "The average difference understates this, because the new-vector "
+                    "series sits at its ceiling. The comparison that carries the finding "
+                    "is that the worst generation for fresh mutations still matched or "
+                    "beat the best generation for the original set."
                 )
                 doc.add_paragraph(
                     "This is the boundary finding arriving from the other direction. "
@@ -596,6 +606,23 @@ def build() -> Path:
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     doc.save(OUT)
+
+    # Stamp what this document was built from, so the audit can verify its provenance
+    # without relying on file times.
+    (ARTIFACTS_DIR / "walkthrough_build.json").write_text(
+        json.dumps(
+            {
+                "built_at": date.today().isoformat(),
+                "source_digest": source_digest(),
+                "run_id": (manifest or {}).get("run_id"),
+                "config_hash": (manifest or {}).get("config_hash"),
+                "loop_run_id": (loop or {}).get("run_id"),
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     return OUT
 
 

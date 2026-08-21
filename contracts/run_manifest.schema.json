@@ -13,6 +13,10 @@
     "seed": { "type": "integer" },
     "config_hash": { "type": "string", "description": "SHA-256 of config.yaml. Two runs with the same seed and config_hash must produce identical numbers." },
     "code_version": { "type": ["string", "null"], "description": "Git commit SHA, when available." },
+    "source_digest": {
+      "type": ["string", "null"],
+      "description": "SHA-256 over the sources that determine a run's output. Recorded so the audit can ask whether these artefacts were produced by the code currently in the repository. A modification time cannot answer that: git does not preserve mtimes, so on a fresh clone every file carries the same timestamp."
+    },
     "prevalence": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
     "is_fixture": {
       "type": "boolean",

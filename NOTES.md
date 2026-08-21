@@ -800,3 +800,58 @@ Taking the conservative option. Instead:
   judge who kills it at minute ten concludes the repository is broken.
 - The README carries a table of stage runtimes with the 35-minute simulate called out.
 - `--cache-ledger` makes the second run of the same seed and size skip the simulate.
+
+---
+
+# D-038 — The audit's freshness check was wrong, and the clean-clone test caught it
+
+The first clean-clone run reported four freshness failures on a repository where nothing
+was actually stale. The check compared modification times, and **git does not preserve
+mtimes**: every file in a fresh clone carries the clone timestamp, so any ordering
+between them is an accident. It would equally have reported zero failures on a clone
+where everything was stale.
+
+The control built to catch bugs of this class had the bug of this class. It only showed
+up because the clean-clone test was started early rather than on the last day, which is
+the argument for starting it early.
+
+Replaced with content digests. `source_digest()` hashes the eleven files whose content
+determines a run's output, every manifest records it, and the walkthrough writes a
+`walkthrough_build.json` stamp carrying the digest and the run_id it was built from. The
+question "were these artefacts produced by this code" is now answered identically on any
+machine.
+
+The ledger cache key already used the same idea, which is where the approach came from.
+
+# D-039 — The loop's final curve, and how to read it
+
+    gen   fixed set   new vectors   current set
+    G0       94.7%       n/a           94.7%
+    G1       92.1%      100.0%        100.0%
+    G2       94.7%      100.0%        100.0%
+    G3       97.4%      100.0%         96.6%
+    G4       97.4%      100.0%         98.6%
+
+Fixed set moved 94.7% to 97.4% across five generations, a 2.6-point rise inside a
+5.3-point band. On its own that is noise and is not claimed as hardening.
+
+**The new-vector series is the result.** Every generation that introduced vectors caught
+all of them, while the fixed set never exceeded 97.4%. The worst generation for fresh
+mutations beat the best generation for the original set.
+
+Reported as: directed mutation inside a fixed grammar produces variants, not novelty. It
+moves parameters and recombines primitives the grammar already contains, and it never
+invents a new extraction rail - which is exactly where V006 showed the boundary to be.
+Adversarial search of this kind hardens a defender against variation and not against
+novelty, and the practical instruction is to point a red team at new rails rather than at
+parameter space.
+
+The average gap (+3.6 points) understates this because the new-vector series is pinned at
+its ceiling, so both the console summary and the walkthrough compare the worst fresh
+generation against the best fixed generation instead. Two of my own outputs initially
+disagreed on this, one calling it "no measurable difference" while the other wrote the
+strong version; they now share the test.
+
+Caveat carried into the document: G0's new-vector figure is definitionally the whole set,
+since every vector is new at generation 0. The code now records None there; this run
+predates that fix by minutes and shows 94.7%.
