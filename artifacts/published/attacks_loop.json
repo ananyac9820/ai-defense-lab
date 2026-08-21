@@ -1,0 +1,1506 @@
+{
+  "contract_version": "0.1.0",
+  "generated_at": "2026-08-21T02:51:45Z",
+  "grammar_version": "0.1.0",
+  "vectors": [
+    {
+      "vector_id": "V001",
+      "name": "BIN sweep via AI-scripted checkout bot",
+      "channel": "cards_cnp",
+      "ai_capability": "agentic_automation",
+      "objective": "credential_capture",
+      "chain": [
+        "phish_credential",
+        "card_test_sweep",
+        "drain_single"
+      ],
+      "data_signature": "High authorisation velocity from a single device across many card numbers, elevated decline ratio, and inter-arrival timing far more regular than a human checkout flow produces. The rhythm is the tell, not any single transaction.",
+      "parameters": {
+        "cards_per_sweep": [
+          40,
+          260
+        ],
+        "probe_amount_inr": [
+          10,
+          90
+        ],
+        "inter_arrival_ms": [
+          900,
+          2600
+        ],
+        "decline_ratio": [
+          0.55,
+          0.9
+        ],
+        "drain_amount_inr": [
+          8000,
+          140000
+        ]
+      },
+      "source": {
+        "case": "Card testing bots increasingly script human-like checkout behaviour to evade rate limits; Mastercard names CNP as the majority of card fraud losses as commerce moves online.",
+        "stat": "majority of card fraud losses",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/Insights/2025/sharpening-card-fraud-defenses-in-the-age-of-risk.html",
+        "doc_ref": "33_AI_Era_Frauds #9 (card testing / BIN attacks), #8 (CNP)",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "session"
+      ],
+      "holdout": "none",
+      "generation": 0,
+      "parent_vector_id": null,
+      "mutation_mode": null,
+      "narrative": null
+    },
+    {
+      "vector_id": "V002",
+      "name": "Mule layering of scam proceeds",
+      "channel": "bank_transfer",
+      "ai_capability": "llm_text_generation",
+      "objective": "laundering_layering",
+      "chain": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "data_signature": "Fan-out into a set of recently opened accounts with near-equal money-in and money-out, short residence time at each hop, and shared device fingerprints across accounts that are otherwise unrelated. Invisible in any single row.",
+      "parameters": {
+        "n_mules": [
+          4,
+          14
+        ],
+        "hop_delay_minutes": [
+          3,
+          55
+        ],
+        "split_ratio_jitter": [
+          0.05,
+          0.3
+        ],
+        "residence_seconds": [
+          60,
+          5400
+        ]
+      },
+      "source": {
+        "case": "Mastercard's AI Garage doubled compromised-card detection by combining generative AI with graph technology over relationships between accounts, devices and cards; mule networks are the canonical graph-visible fraud.",
+        "stat": "2x compromised-card detection",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/stories/2024/inside-the-algorithm-how-gen-ai-and-graph-technology-are-cracking-down-on-card-sharks.html",
+        "doc_ref": "33_AI_Era_Frauds #27 (mule account networks); Research_Backed_Plan S1A",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph"
+      ],
+      "holdout": "none",
+      "generation": 0,
+      "parent_vector_id": null,
+      "mutation_mode": null,
+      "narrative": null
+    },
+    {
+      "vector_id": "V003",
+      "name": "Deepfake investment scam driving an authorised push payment",
+      "channel": "upi_instant",
+      "ai_capability": "deepfake_video",
+      "objective": "authorised_push_payment",
+      "chain": [
+        "add_beneficiary",
+        "micro_test",
+        "drain_single"
+      ],
+      "data_signature": "The victim's own device, own credentials, own location. What differs is how they interact: payee ID pasted rather than typed, unusually long dwell before confirm, elevated correction rate, and a read-to-me cadence of long pause followed by a burst of input. Every conventional signal says legitimate.",
+      "parameters": {
+        "payee_age_minutes": [
+          1,
+          40
+        ],
+        "micro_test_amount_inr": [
+          1,
+          100
+        ],
+        "drain_amount_inr": [
+          50000,
+          4300000
+        ],
+        "paste_rate_payee": [
+          0.6,
+          0.95
+        ],
+        "confirm_dwell_ms": [
+          3000,
+          22000
+        ]
+      },
+      "source": {
+        "case": "A Pune resident lost INR 43 lakh to a deepfaked video of well-known businesspeople endorsing a fake trading platform; deepfake celebrity investment scams are the single largest deepfake-fraud category.",
+        "stat": "INR 43 lakh; 52% of global deepfake fraud losses",
+        "citation_url": "https://scamwatchhq.com/india-scams-2026-digital-arrest-upi-fraud-epidemic/",
+        "doc_ref": "33_AI_Era_Frauds #21, #24 (APP fraud); Research_Backed_Plan S2",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "session",
+        "transaction"
+      ],
+      "holdout": "none",
+      "generation": 0,
+      "parent_vector_id": null,
+      "mutation_mode": null,
+      "narrative": null
+    },
+    {
+      "vector_id": "V004",
+      "name": "SIM swap to account takeover with cloned-voice OTP capture",
+      "channel": "wallets_tokenisation",
+      "ai_capability": "voice_cloning",
+      "objective": "account_takeover",
+      "chain": [
+        "clone_voice_otp",
+        "register_device",
+        "provision_token",
+        "drain_single"
+      ],
+      "data_signature": "Device change followed within minutes by token provisioning and extraction, with a geography discontinuity relative to the account's home geo that no legitimate travel pattern explains.",
+      "parameters": {
+        "minutes_device_to_drain": [
+          4,
+          180
+        ],
+        "geo_jump_km": [
+          400,
+          2200
+        ],
+        "drain_amount_inr": [
+          20000,
+          900000
+        ],
+        "otp_dwell_ms": [
+          4000,
+          26000
+        ]
+      },
+      "source": {
+        "case": "A UAE bank manager approved a USD 35M transfer after a cloned-director voice call; a cloned voice of Bharti Airtel's chairman was used against an executive. Mastercard-linked research expects account takeover to cause up to USD 17B in 2025 losses.",
+        "stat": "USD 35M single incident; USD 17B expected ATO losses",
+        "citation_url": "https://arxiv.org/pdf/2507.00907",
+        "doc_ref": "33_AI_Era_Frauds #15, #2, #4; Research_Backed_Plan S2",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "transaction",
+        "graph"
+      ],
+      "holdout": "family",
+      "generation": 0,
+      "parent_vector_id": null,
+      "mutation_mode": null,
+      "narrative": null
+    },
+    {
+      "vector_id": "V005",
+      "name": "Synthetic identity onboarded through deepfake video KYC",
+      "channel": "kyc_onboarding",
+      "ai_capability": "synthetic_identity",
+      "objective": "new_account_fraud",
+      "chain": [
+        "synthesise_identity",
+        "deepfake_kyc",
+        "open_mule_account",
+        "structured_withdrawal"
+      ],
+      "data_signature": "Thin-file account with no historical footprint, an onboarding session that completes faster than the human distribution, then a jump to high velocity with withdrawal amounts clustered just under a round threshold.",
+      "parameters": {
+        "days_dormant_after_open": [
+          2,
+          45
+        ],
+        "kyc_session_seconds": [
+          40,
+          150
+        ],
+        "threshold_inr": 50000,
+        "under_threshold_margin_inr": [
+          500,
+          4800
+        ],
+        "n_withdrawals": [
+          4,
+          18
+        ]
+      },
+      "source": {
+        "case": "RBI reported an eightfold year-on-year jump in fraud losses to INR 21,367 crore in H1 FY2024-25, driven largely by AI-generated synthetic identities bypassing video-KYC liveness checks. Mastercard names synthetic identity its fastest-growing fraud category.",
+        "stat": "INR 21,367 crore; 8x YoY",
+        "citation_url": "https://hyperverge.co/blog/what-is-a-deepfake/",
+        "doc_ref": "33_AI_Era_Frauds #1, #3, #28; Research_Backed_Plan S2",
+        "regulator_advisory": "RBI H1 FY2024-25 fraud reporting"
+      },
+      "expected_levels": [
+        "graph",
+        "session"
+      ],
+      "holdout": "none",
+      "generation": 0,
+      "parent_vector_id": null,
+      "mutation_mode": null,
+      "narrative": null
+    },
+    {
+      "vector_id": "V006",
+      "name": "Fraudulent merchant onboarding into collusion payout",
+      "channel": "merchant_payouts",
+      "ai_capability": "document_forgery",
+      "objective": "laundering_layering",
+      "chain": [
+        "synthesise_identity",
+        "open_mule_account",
+        "merchant_collusion_payout"
+      ],
+      "data_signature": "Value leaves through an acquiring account rather than a transfer. Concentrated volume from few payers into a merchant onboarded weeks ago, with a category mix that does not match its stated business. The extraction never touches a peer-to-peer rail, so nothing about it resembles the money movement the detector has learned.",
+      "parameters": {
+        "merchant_age_days": [
+          7,
+          120
+        ],
+        "payout_multiple": [
+          1.5,
+          12.0
+        ],
+        "n_payouts": [
+          2,
+          7
+        ]
+      },
+      "source": {
+        "case": "AI-generated fake business documents and fabricated transaction histories are used to pass merchant underwriting, after which the account processes stolen card charges and pays out to the fraudster.",
+        "stat": null,
+        "citation_url": "https://www.mastercard.com/us/en/news-and-trends/stories/2026/recorded-future-annual-payment-fraud-report.html",
+        "doc_ref": "33_AI_Era_Frauds #31 (fraudulent merchant onboarding)",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph",
+        "transaction"
+      ],
+      "holdout": "family",
+      "generation": 0,
+      "parent_vector_id": null,
+      "mutation_mode": null,
+      "narrative": null
+    },
+    {
+      "vector_id": "V007",
+      "name": "Hijacked shopping agent purchasing on a forged intent proof",
+      "channel": "agentic_commerce",
+      "ai_capability": "agent_impersonation",
+      "objective": "intent_forgery",
+      "chain": [
+        "compromise_agent",
+        "provision_token",
+        "agentic_purchase"
+      ],
+      "data_signature": "An authorisation carrying an agent identifier with no human interaction event anywhere in the session. Event cadence is machine-regular, there is no dwell before confirmation because nothing was confirmed by a person, and the purchase settles against a merchant the account has no history with.",
+      "parameters": {
+        "agent_actions": [
+          3,
+          9
+        ],
+        "purchase_multiple": [
+          1.2,
+          8.0
+        ],
+        "inter_action_ms": [
+          400,
+          1600
+        ]
+      },
+      "source": {
+        "case": "As AI shopping agents begin transacting on users' behalf, fraudsters target the agent's authorisation flow itself, tricking an agent into approving a fraudulent payee or replaying a forged proof of human intent. Mastercard's public posture through 2026 centres on agent-payment infrastructure and proving a human authorised an agent's purchase.",
+        "stat": null,
+        "citation_url": "https://www.bny.com/corporate/global/en/insights/ai-and-payments-fraud-an-evolving-landscape.html",
+        "doc_ref": "33_AI_Era_Frauds #33 (agentic AI commerce fraud); Strategy PDF S4.1",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "session",
+        "transaction"
+      ],
+      "holdout": "family",
+      "generation": 0,
+      "parent_vector_id": null,
+      "mutation_mode": null,
+      "narrative": null
+    },
+    {
+      "vector_id": "V008",
+      "name": "Phished credential into structured cash-out",
+      "channel": "upi_instant",
+      "ai_capability": "llm_text_generation",
+      "objective": "laundering_layering",
+      "chain": [
+        "phish_credential",
+        "open_mule_account",
+        "micro_test",
+        "structured_withdrawal"
+      ],
+      "data_signature": "Every primitive here appears somewhere in the training set. None of them appear in this order. A phished credential feeding a structured cash-out is the recombination the grammar makes cheap and that a fixed test set never contains.",
+      "parameters": {
+        "threshold_inr": 50000,
+        "under_threshold_margin_inr": [
+          400,
+          4200
+        ],
+        "n_withdrawals": [
+          4,
+          14
+        ],
+        "micro_test_amount_inr": [
+          1,
+          120
+        ]
+      },
+      "source": {
+        "case": "AI-written phishing harvests the credential; the proceeds are then broken into transfers sized below the reporting threshold. Both halves are documented separately and the combination is what the grammar generates.",
+        "stat": null,
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/Insights/2025/sharpening-card-fraud-defenses-in-the-age-of-risk.html",
+        "doc_ref": "33_AI_Era_Frauds #7 (spear-phishing), #28 (structuring)",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "session",
+        "graph"
+      ],
+      "holdout": "composition",
+      "generation": 0,
+      "parent_vector_id": null,
+      "mutation_mode": null,
+      "narrative": null
+    },
+    {
+      "vector_id": "V009",
+      "name": "Fraudulent merchant onboarding into collusion payout (drift g1)",
+      "channel": "merchant_payouts",
+      "ai_capability": "document_forgery",
+      "objective": "laundering_layering",
+      "chain": [
+        "synthesise_identity",
+        "open_mule_account",
+        "merchant_collusion_payout"
+      ],
+      "data_signature": "Generation 1 mutation of V006: widened n_payouts. Directed at mcc_code, g_fanout_24h, g_residence_seconds.",
+      "parameters": {
+        "merchant_age_days": [
+          7,
+          120
+        ],
+        "payout_multiple": [
+          1.5,
+          12.0
+        ],
+        "n_payouts": [
+          1.2,
+          11.2
+        ]
+      },
+      "source": {
+        "case": "AI-generated fake business documents and fabricated transaction histories are used to pass merchant underwriting, after which the account processes stolen card charges and pays out to the fraudster.",
+        "stat": null,
+        "citation_url": "https://www.mastercard.com/us/en/news-and-trends/stories/2026/recorded-future-annual-payment-fraud-report.html",
+        "doc_ref": "33_AI_Era_Frauds #31 (fraudulent merchant onboarding)",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph",
+        "transaction"
+      ],
+      "holdout": "none",
+      "generation": 1,
+      "parent_vector_id": "V006",
+      "mutation_mode": "parameter_drift",
+      "narrative": null
+    },
+    {
+      "vector_id": "V010",
+      "name": "Fraudulent merchant onboarding into collusion payout (recomposed g1)",
+      "channel": "merchant_payouts",
+      "ai_capability": "document_forgery",
+      "objective": "laundering_layering",
+      "chain": [
+        "synthesise_identity",
+        "open_mule_account",
+        "merchant_collusion_payout",
+        "dispute_after_extraction"
+      ],
+      "data_signature": "Generation 1 mutation of V006: inserted dispute_after_extraction at stage obfuscate. Directed at mcc_code, g_fanout_24h, g_residence_seconds.",
+      "parameters": {
+        "merchant_age_days": [
+          7,
+          120
+        ],
+        "payout_multiple": [
+          1.5,
+          12.0
+        ],
+        "n_payouts": [
+          2,
+          7
+        ]
+      },
+      "source": {
+        "case": "AI-generated fake business documents and fabricated transaction histories are used to pass merchant underwriting, after which the account processes stolen card charges and pays out to the fraudster.",
+        "stat": null,
+        "citation_url": "https://www.mastercard.com/us/en/news-and-trends/stories/2026/recorded-future-annual-payment-fraud-report.html",
+        "doc_ref": "33_AI_Era_Frauds #31 (fraudulent merchant onboarding)",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph",
+        "transaction"
+      ],
+      "holdout": "none",
+      "generation": 1,
+      "parent_vector_id": "V006",
+      "mutation_mode": "recomposition",
+      "narrative": null
+    },
+    {
+      "vector_id": "V011",
+      "name": "Hijacked shopping agent purchasing on a forged intent proof (drift g1)",
+      "channel": "agentic_commerce",
+      "ai_capability": "agent_impersonation",
+      "objective": "intent_forgery",
+      "chain": [
+        "compromise_agent",
+        "provision_token",
+        "agentic_purchase"
+      ],
+      "data_signature": "Generation 1 mutation of V007: widened inter_action_ms. Directed at mcc_code, g_fanout_24h, g_residence_seconds.",
+      "parameters": {
+        "agent_actions": [
+          3,
+          9
+        ],
+        "purchase_multiple": [
+          1.2,
+          8.0
+        ],
+        "inter_action_ms": [
+          240.0,
+          2560.0
+        ]
+      },
+      "source": {
+        "case": "As AI shopping agents begin transacting on users' behalf, fraudsters target the agent's authorisation flow itself, tricking an agent into approving a fraudulent payee or replaying a forged proof of human intent. Mastercard's public posture through 2026 centres on agent-payment infrastructure and proving a human authorised an agent's purchase.",
+        "stat": null,
+        "citation_url": "https://www.bny.com/corporate/global/en/insights/ai-and-payments-fraud-an-evolving-landscape.html",
+        "doc_ref": "33_AI_Era_Frauds #33 (agentic AI commerce fraud); Strategy PDF S4.1",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "session",
+        "transaction"
+      ],
+      "holdout": "none",
+      "generation": 1,
+      "parent_vector_id": "V007",
+      "mutation_mode": "parameter_drift",
+      "narrative": null
+    },
+    {
+      "vector_id": "V012",
+      "name": "Hijacked shopping agent purchasing on a forged intent proof (recomposed g1)",
+      "channel": "agentic_commerce",
+      "ai_capability": "agent_impersonation",
+      "objective": "intent_forgery",
+      "chain": [
+        "compromise_agent",
+        "provision_token",
+        "agentic_purchase",
+        "dispute_after_extraction"
+      ],
+      "data_signature": "Generation 1 mutation of V007: inserted dispute_after_extraction at stage obfuscate. Directed at mcc_code, g_fanout_24h, g_residence_seconds.",
+      "parameters": {
+        "agent_actions": [
+          3,
+          9
+        ],
+        "purchase_multiple": [
+          1.2,
+          8.0
+        ],
+        "inter_action_ms": [
+          400,
+          1600
+        ]
+      },
+      "source": {
+        "case": "As AI shopping agents begin transacting on users' behalf, fraudsters target the agent's authorisation flow itself, tricking an agent into approving a fraudulent payee or replaying a forged proof of human intent. Mastercard's public posture through 2026 centres on agent-payment infrastructure and proving a human authorised an agent's purchase.",
+        "stat": null,
+        "citation_url": "https://www.bny.com/corporate/global/en/insights/ai-and-payments-fraud-an-evolving-landscape.html",
+        "doc_ref": "33_AI_Era_Frauds #33 (agentic AI commerce fraud); Strategy PDF S4.1",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "session",
+        "transaction"
+      ],
+      "holdout": "none",
+      "generation": 1,
+      "parent_vector_id": "V007",
+      "mutation_mode": "recomposition",
+      "narrative": null
+    },
+    {
+      "vector_id": "V013",
+      "name": "Mule layering of scam proceeds (drift g1)",
+      "channel": "bank_transfer",
+      "ai_capability": "llm_text_generation",
+      "objective": "laundering_layering",
+      "chain": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "data_signature": "Generation 1 mutation of V002: widened n_mules, residence_seconds, hop_delay_minutes. Directed at mcc_code, g_fanout_24h, g_residence_seconds.",
+      "parameters": {
+        "n_mules": [
+          0.0,
+          20.73
+        ],
+        "hop_delay_minutes": [
+          0.0,
+          69.436
+        ],
+        "split_ratio_jitter": [
+          0.05,
+          0.3
+        ],
+        "residence_seconds": [
+          0.0,
+          7761.9163
+        ]
+      },
+      "source": {
+        "case": "Mastercard's AI Garage doubled compromised-card detection by combining generative AI with graph technology over relationships between accounts, devices and cards; mule networks are the canonical graph-visible fraud.",
+        "stat": "2x compromised-card detection",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/stories/2024/inside-the-algorithm-how-gen-ai-and-graph-technology-are-cracking-down-on-card-sharks.html",
+        "doc_ref": "33_AI_Era_Frauds #27 (mule account networks); Research_Backed_Plan S1A",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph"
+      ],
+      "holdout": "none",
+      "generation": 1,
+      "parent_vector_id": "V002",
+      "mutation_mode": "parameter_drift",
+      "narrative": null
+    },
+    {
+      "vector_id": "V014",
+      "name": "Mule layering of scam proceeds (recomposed g1)",
+      "channel": "bank_transfer",
+      "ai_capability": "llm_text_generation",
+      "objective": "laundering_layering",
+      "chain": [
+        "provision_token",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "data_signature": "Generation 1 mutation of V002: substituted open_mule_account with provision_token. Directed at mcc_code, g_fanout_24h, g_residence_seconds.",
+      "parameters": {
+        "n_mules": [
+          4,
+          14
+        ],
+        "hop_delay_minutes": [
+          3,
+          55
+        ],
+        "split_ratio_jitter": [
+          0.05,
+          0.3
+        ],
+        "residence_seconds": [
+          60,
+          5400
+        ]
+      },
+      "source": {
+        "case": "Mastercard's AI Garage doubled compromised-card detection by combining generative AI with graph technology over relationships between accounts, devices and cards; mule networks are the canonical graph-visible fraud.",
+        "stat": "2x compromised-card detection",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/stories/2024/inside-the-algorithm-how-gen-ai-and-graph-technology-are-cracking-down-on-card-sharks.html",
+        "doc_ref": "33_AI_Era_Frauds #27 (mule account networks); Research_Backed_Plan S1A",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph"
+      ],
+      "holdout": "none",
+      "generation": 1,
+      "parent_vector_id": "V002",
+      "mutation_mode": "recomposition",
+      "narrative": null
+    },
+    {
+      "vector_id": "V015",
+      "name": "Mule layering of scam proceeds (drift g1) (drift g2)",
+      "channel": "bank_transfer",
+      "ai_capability": "llm_text_generation",
+      "objective": "laundering_layering",
+      "chain": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "data_signature": "Generation 2 mutation of V013: widened n_mules, residence_seconds, hop_delay_minutes. Directed at g_fanout_24h, amount_z_account, mcc_code.",
+      "parameters": {
+        "n_mules": [
+          0.0,
+          26.8822
+        ],
+        "hop_delay_minutes": [
+          0.0,
+          135.9313
+        ],
+        "split_ratio_jitter": [
+          0.05,
+          0.3
+        ],
+        "residence_seconds": [
+          0.0,
+          15531.7026
+        ]
+      },
+      "source": {
+        "case": "Mastercard's AI Garage doubled compromised-card detection by combining generative AI with graph technology over relationships between accounts, devices and cards; mule networks are the canonical graph-visible fraud.",
+        "stat": "2x compromised-card detection",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/stories/2024/inside-the-algorithm-how-gen-ai-and-graph-technology-are-cracking-down-on-card-sharks.html",
+        "doc_ref": "33_AI_Era_Frauds #27 (mule account networks); Research_Backed_Plan S1A",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph"
+      ],
+      "holdout": "none",
+      "generation": 2,
+      "parent_vector_id": "V013",
+      "mutation_mode": "parameter_drift",
+      "narrative": null
+    },
+    {
+      "vector_id": "V016",
+      "name": "Mule layering of scam proceeds (drift g1) (recomposed g2)",
+      "channel": "bank_transfer",
+      "ai_capability": "llm_text_generation",
+      "objective": "laundering_layering",
+      "chain": [
+        "clone_voice_otp",
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "data_signature": "Generation 2 mutation of V013: inserted clone_voice_otp at stage acquire. Directed at g_fanout_24h, amount_z_account, mcc_code.",
+      "parameters": {
+        "n_mules": [
+          0.0,
+          20.73
+        ],
+        "hop_delay_minutes": [
+          0.0,
+          69.436
+        ],
+        "split_ratio_jitter": [
+          0.05,
+          0.3
+        ],
+        "residence_seconds": [
+          0.0,
+          7761.9163
+        ]
+      },
+      "source": {
+        "case": "Mastercard's AI Garage doubled compromised-card detection by combining generative AI with graph technology over relationships between accounts, devices and cards; mule networks are the canonical graph-visible fraud.",
+        "stat": "2x compromised-card detection",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/stories/2024/inside-the-algorithm-how-gen-ai-and-graph-technology-are-cracking-down-on-card-sharks.html",
+        "doc_ref": "33_AI_Era_Frauds #27 (mule account networks); Research_Backed_Plan S1A",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph"
+      ],
+      "holdout": "none",
+      "generation": 2,
+      "parent_vector_id": "V013",
+      "mutation_mode": "recomposition",
+      "narrative": null
+    },
+    {
+      "vector_id": "V017",
+      "name": "BIN sweep via AI-scripted checkout bot (drift g2)",
+      "channel": "cards_cnp",
+      "ai_capability": "agentic_automation",
+      "objective": "credential_capture",
+      "chain": [
+        "phish_credential",
+        "card_test_sweep",
+        "drain_single"
+      ],
+      "data_signature": "Generation 2 mutation of V001: widened drain_amount_inr, cards_per_sweep, inter_arrival_ms. Directed at g_fanout_24h, amount_z_account, mcc_code.",
+      "parameters": {
+        "cards_per_sweep": [
+          0.0,
+          368.9985
+        ],
+        "probe_amount_inr": [
+          10,
+          90
+        ],
+        "inter_arrival_ms": [
+          659.4499,
+          3344.8157
+        ],
+        "decline_ratio": [
+          0.55,
+          0.9
+        ],
+        "drain_amount_inr": [
+          0.0,
+          287517.3646
+        ]
+      },
+      "source": {
+        "case": "Card testing bots increasingly script human-like checkout behaviour to evade rate limits; Mastercard names CNP as the majority of card fraud losses as commerce moves online.",
+        "stat": "majority of card fraud losses",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/Insights/2025/sharpening-card-fraud-defenses-in-the-age-of-risk.html",
+        "doc_ref": "33_AI_Era_Frauds #9 (card testing / BIN attacks), #8 (CNP)",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "session"
+      ],
+      "holdout": "none",
+      "generation": 2,
+      "parent_vector_id": "V001",
+      "mutation_mode": "parameter_drift",
+      "narrative": null
+    },
+    {
+      "vector_id": "V018",
+      "name": "BIN sweep via AI-scripted checkout bot (recomposed g2)",
+      "channel": "cards_cnp",
+      "ai_capability": "agentic_automation",
+      "objective": "credential_capture",
+      "chain": [
+        "deepfake_kyc",
+        "card_test_sweep",
+        "drain_single"
+      ],
+      "data_signature": "Generation 2 mutation of V001: substituted phish_credential with deepfake_kyc. Directed at g_fanout_24h, amount_z_account, mcc_code.",
+      "parameters": {
+        "cards_per_sweep": [
+          40,
+          260
+        ],
+        "probe_amount_inr": [
+          10,
+          90
+        ],
+        "inter_arrival_ms": [
+          900,
+          2600
+        ],
+        "decline_ratio": [
+          0.55,
+          0.9
+        ],
+        "drain_amount_inr": [
+          8000,
+          140000
+        ]
+      },
+      "source": {
+        "case": "Card testing bots increasingly script human-like checkout behaviour to evade rate limits; Mastercard names CNP as the majority of card fraud losses as commerce moves online.",
+        "stat": "majority of card fraud losses",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/Insights/2025/sharpening-card-fraud-defenses-in-the-age-of-risk.html",
+        "doc_ref": "33_AI_Era_Frauds #9 (card testing / BIN attacks), #8 (CNP)",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "session"
+      ],
+      "holdout": "none",
+      "generation": 2,
+      "parent_vector_id": "V001",
+      "mutation_mode": "recomposition",
+      "narrative": null
+    },
+    {
+      "vector_id": "V019",
+      "name": "Mule layering of scam proceeds (drift g2)",
+      "channel": "bank_transfer",
+      "ai_capability": "llm_text_generation",
+      "objective": "laundering_layering",
+      "chain": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "data_signature": "Generation 2 mutation of V002: widened n_mules, residence_seconds, hop_delay_minutes. Directed at g_fanout_24h, amount_z_account, mcc_code.",
+      "parameters": {
+        "n_mules": [
+          0.0,
+          21.579
+        ],
+        "hop_delay_minutes": [
+          0.0,
+          114.6583
+        ],
+        "split_ratio_jitter": [
+          0.05,
+          0.3
+        ],
+        "residence_seconds": [
+          0.0,
+          7641.6974
+        ]
+      },
+      "source": {
+        "case": "Mastercard's AI Garage doubled compromised-card detection by combining generative AI with graph technology over relationships between accounts, devices and cards; mule networks are the canonical graph-visible fraud.",
+        "stat": "2x compromised-card detection",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/stories/2024/inside-the-algorithm-how-gen-ai-and-graph-technology-are-cracking-down-on-card-sharks.html",
+        "doc_ref": "33_AI_Era_Frauds #27 (mule account networks); Research_Backed_Plan S1A",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph"
+      ],
+      "holdout": "none",
+      "generation": 2,
+      "parent_vector_id": "V002",
+      "mutation_mode": "parameter_drift",
+      "narrative": null
+    },
+    {
+      "vector_id": "V020",
+      "name": "Mule layering of scam proceeds (recomposed g2)",
+      "channel": "bank_transfer",
+      "ai_capability": "llm_text_generation",
+      "objective": "laundering_layering",
+      "chain": [
+        "open_mule_account",
+        "balance_probe",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "data_signature": "Generation 2 mutation of V002: inserted balance_probe at stage validate. Directed at g_fanout_24h, amount_z_account, mcc_code.",
+      "parameters": {
+        "n_mules": [
+          4,
+          14
+        ],
+        "hop_delay_minutes": [
+          3,
+          55
+        ],
+        "split_ratio_jitter": [
+          0.05,
+          0.3
+        ],
+        "residence_seconds": [
+          60,
+          5400
+        ]
+      },
+      "source": {
+        "case": "Mastercard's AI Garage doubled compromised-card detection by combining generative AI with graph technology over relationships between accounts, devices and cards; mule networks are the canonical graph-visible fraud.",
+        "stat": "2x compromised-card detection",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/stories/2024/inside-the-algorithm-how-gen-ai-and-graph-technology-are-cracking-down-on-card-sharks.html",
+        "doc_ref": "33_AI_Era_Frauds #27 (mule account networks); Research_Backed_Plan S1A",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph"
+      ],
+      "holdout": "none",
+      "generation": 2,
+      "parent_vector_id": "V002",
+      "mutation_mode": "recomposition",
+      "narrative": null
+    },
+    {
+      "vector_id": "V021",
+      "name": "Mule layering of scam proceeds (drift g1) (drift g3)",
+      "channel": "bank_transfer",
+      "ai_capability": "llm_text_generation",
+      "objective": "laundering_layering",
+      "chain": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "data_signature": "Generation 3 mutation of V013: widened n_mules, n_mules, split_ratio_jitter. Directed at g_degree_ratio, mcc_code, channel_code.",
+      "parameters": {
+        "n_mules": [
+          0.0,
+          75.3499
+        ],
+        "hop_delay_minutes": [
+          0.0,
+          69.436
+        ],
+        "split_ratio_jitter": [
+          0.0,
+          0.4658
+        ],
+        "residence_seconds": [
+          0.0,
+          7761.9163
+        ]
+      },
+      "source": {
+        "case": "Mastercard's AI Garage doubled compromised-card detection by combining generative AI with graph technology over relationships between accounts, devices and cards; mule networks are the canonical graph-visible fraud.",
+        "stat": "2x compromised-card detection",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/stories/2024/inside-the-algorithm-how-gen-ai-and-graph-technology-are-cracking-down-on-card-sharks.html",
+        "doc_ref": "33_AI_Era_Frauds #27 (mule account networks); Research_Backed_Plan S1A",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph"
+      ],
+      "holdout": "none",
+      "generation": 3,
+      "parent_vector_id": "V013",
+      "mutation_mode": "parameter_drift",
+      "narrative": null
+    },
+    {
+      "vector_id": "V022",
+      "name": "Mule layering of scam proceeds (drift g1) (recomposed g3)",
+      "channel": "bank_transfer",
+      "ai_capability": "llm_text_generation",
+      "objective": "laundering_layering",
+      "chain": [
+        "phish_credential",
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "data_signature": "Generation 3 mutation of V013: inserted phish_credential at stage acquire. Directed at g_degree_ratio, mcc_code, channel_code.",
+      "parameters": {
+        "n_mules": [
+          0.0,
+          20.73
+        ],
+        "hop_delay_minutes": [
+          0.0,
+          69.436
+        ],
+        "split_ratio_jitter": [
+          0.05,
+          0.3
+        ],
+        "residence_seconds": [
+          0.0,
+          7761.9163
+        ]
+      },
+      "source": {
+        "case": "Mastercard's AI Garage doubled compromised-card detection by combining generative AI with graph technology over relationships between accounts, devices and cards; mule networks are the canonical graph-visible fraud.",
+        "stat": "2x compromised-card detection",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/stories/2024/inside-the-algorithm-how-gen-ai-and-graph-technology-are-cracking-down-on-card-sharks.html",
+        "doc_ref": "33_AI_Era_Frauds #27 (mule account networks); Research_Backed_Plan S1A",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph"
+      ],
+      "holdout": "none",
+      "generation": 3,
+      "parent_vector_id": "V013",
+      "mutation_mode": "recomposition",
+      "narrative": null
+    },
+    {
+      "vector_id": "V023",
+      "name": "Mule layering of scam proceeds (drift g3)",
+      "channel": "bank_transfer",
+      "ai_capability": "llm_text_generation",
+      "objective": "laundering_layering",
+      "chain": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "data_signature": "Generation 3 mutation of V002: widened n_mules, n_mules, split_ratio_jitter. Directed at g_degree_ratio, mcc_code, channel_code.",
+      "parameters": {
+        "n_mules": [
+          0.0,
+          31.9476
+        ],
+        "hop_delay_minutes": [
+          3,
+          55
+        ],
+        "split_ratio_jitter": [
+          0.0,
+          0.4878
+        ],
+        "residence_seconds": [
+          60,
+          5400
+        ]
+      },
+      "source": {
+        "case": "Mastercard's AI Garage doubled compromised-card detection by combining generative AI with graph technology over relationships between accounts, devices and cards; mule networks are the canonical graph-visible fraud.",
+        "stat": "2x compromised-card detection",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/stories/2024/inside-the-algorithm-how-gen-ai-and-graph-technology-are-cracking-down-on-card-sharks.html",
+        "doc_ref": "33_AI_Era_Frauds #27 (mule account networks); Research_Backed_Plan S1A",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph"
+      ],
+      "holdout": "none",
+      "generation": 3,
+      "parent_vector_id": "V002",
+      "mutation_mode": "parameter_drift",
+      "narrative": null
+    },
+    {
+      "vector_id": "V024",
+      "name": "Mule layering of scam proceeds (recomposed g3)",
+      "channel": "bank_transfer",
+      "ai_capability": "llm_text_generation",
+      "objective": "laundering_layering",
+      "chain": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "dispute_after_extraction"
+      ],
+      "data_signature": "Generation 3 mutation of V002: substituted cross_channel_hop with dispute_after_extraction. Directed at g_degree_ratio, mcc_code, channel_code.",
+      "parameters": {
+        "n_mules": [
+          4,
+          14
+        ],
+        "hop_delay_minutes": [
+          3,
+          55
+        ],
+        "split_ratio_jitter": [
+          0.05,
+          0.3
+        ],
+        "residence_seconds": [
+          60,
+          5400
+        ]
+      },
+      "source": {
+        "case": "Mastercard's AI Garage doubled compromised-card detection by combining generative AI with graph technology over relationships between accounts, devices and cards; mule networks are the canonical graph-visible fraud.",
+        "stat": "2x compromised-card detection",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/stories/2024/inside-the-algorithm-how-gen-ai-and-graph-technology-are-cracking-down-on-card-sharks.html",
+        "doc_ref": "33_AI_Era_Frauds #27 (mule account networks); Research_Backed_Plan S1A",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph"
+      ],
+      "holdout": "none",
+      "generation": 3,
+      "parent_vector_id": "V002",
+      "mutation_mode": "recomposition",
+      "narrative": null
+    },
+    {
+      "vector_id": "V025",
+      "name": "BIN sweep via AI-scripted checkout bot (drift g3)",
+      "channel": "cards_cnp",
+      "ai_capability": "agentic_automation",
+      "objective": "credential_capture",
+      "chain": [
+        "phish_credential",
+        "card_test_sweep",
+        "drain_single"
+      ],
+      "data_signature": "Generation 3 mutation of V001: widened cards_per_sweep, decline_ratio. Directed at g_degree_ratio, mcc_code, channel_code.",
+      "parameters": {
+        "cards_per_sweep": [
+          0.0,
+          392.0613
+        ],
+        "probe_amount_inr": [
+          10,
+          90
+        ],
+        "inter_arrival_ms": [
+          900,
+          2600
+        ],
+        "decline_ratio": [
+          0.4137,
+          1.1405
+        ],
+        "drain_amount_inr": [
+          8000,
+          140000
+        ]
+      },
+      "source": {
+        "case": "Card testing bots increasingly script human-like checkout behaviour to evade rate limits; Mastercard names CNP as the majority of card fraud losses as commerce moves online.",
+        "stat": "majority of card fraud losses",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/Insights/2025/sharpening-card-fraud-defenses-in-the-age-of-risk.html",
+        "doc_ref": "33_AI_Era_Frauds #9 (card testing / BIN attacks), #8 (CNP)",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "session"
+      ],
+      "holdout": "none",
+      "generation": 3,
+      "parent_vector_id": "V001",
+      "mutation_mode": "parameter_drift",
+      "narrative": null
+    },
+    {
+      "vector_id": "V026",
+      "name": "BIN sweep via AI-scripted checkout bot (recomposed g3)",
+      "channel": "cards_cnp",
+      "ai_capability": "agentic_automation",
+      "objective": "credential_capture",
+      "chain": [
+        "phish_credential",
+        "micro_test",
+        "drain_single"
+      ],
+      "data_signature": "Generation 3 mutation of V001: substituted card_test_sweep with micro_test. Directed at g_degree_ratio, mcc_code, channel_code.",
+      "parameters": {
+        "cards_per_sweep": [
+          40,
+          260
+        ],
+        "probe_amount_inr": [
+          10,
+          90
+        ],
+        "inter_arrival_ms": [
+          900,
+          2600
+        ],
+        "decline_ratio": [
+          0.55,
+          0.9
+        ],
+        "drain_amount_inr": [
+          8000,
+          140000
+        ]
+      },
+      "source": {
+        "case": "Card testing bots increasingly script human-like checkout behaviour to evade rate limits; Mastercard names CNP as the majority of card fraud losses as commerce moves online.",
+        "stat": "majority of card fraud losses",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/Insights/2025/sharpening-card-fraud-defenses-in-the-age-of-risk.html",
+        "doc_ref": "33_AI_Era_Frauds #9 (card testing / BIN attacks), #8 (CNP)",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "session"
+      ],
+      "holdout": "none",
+      "generation": 3,
+      "parent_vector_id": "V001",
+      "mutation_mode": "recomposition",
+      "narrative": null
+    },
+    {
+      "vector_id": "V027",
+      "name": "Fraudulent merchant onboarding into collusion payout (drift g1) (drift g4)",
+      "channel": "merchant_payouts",
+      "ai_capability": "document_forgery",
+      "objective": "laundering_layering",
+      "chain": [
+        "synthesise_identity",
+        "open_mule_account",
+        "merchant_collusion_payout"
+      ],
+      "data_signature": "Generation 4 mutation of V009: widened payout_multiple. Directed at channel_code, g_residence_seconds, hour_of_day.",
+      "parameters": {
+        "merchant_age_days": [
+          7,
+          120
+        ],
+        "payout_multiple": [
+          0.9,
+          19.2
+        ],
+        "n_payouts": [
+          1.2,
+          11.2
+        ]
+      },
+      "source": {
+        "case": "AI-generated fake business documents and fabricated transaction histories are used to pass merchant underwriting, after which the account processes stolen card charges and pays out to the fraudster.",
+        "stat": null,
+        "citation_url": "https://www.mastercard.com/us/en/news-and-trends/stories/2026/recorded-future-annual-payment-fraud-report.html",
+        "doc_ref": "33_AI_Era_Frauds #31 (fraudulent merchant onboarding)",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph",
+        "transaction"
+      ],
+      "holdout": "none",
+      "generation": 4,
+      "parent_vector_id": "V009",
+      "mutation_mode": "parameter_drift",
+      "narrative": null
+    },
+    {
+      "vector_id": "V028",
+      "name": "Fraudulent merchant onboarding into collusion payout (drift g1) (recomposed g4)",
+      "channel": "merchant_payouts",
+      "ai_capability": "document_forgery",
+      "objective": "laundering_layering",
+      "chain": [
+        "synthesise_identity",
+        "open_mule_account",
+        "agentic_purchase"
+      ],
+      "data_signature": "Generation 4 mutation of V009: substituted merchant_collusion_payout with agentic_purchase. Directed at channel_code, g_residence_seconds, hour_of_day.",
+      "parameters": {
+        "merchant_age_days": [
+          7,
+          120
+        ],
+        "payout_multiple": [
+          1.5,
+          12.0
+        ],
+        "n_payouts": [
+          1.2,
+          11.2
+        ]
+      },
+      "source": {
+        "case": "AI-generated fake business documents and fabricated transaction histories are used to pass merchant underwriting, after which the account processes stolen card charges and pays out to the fraudster.",
+        "stat": null,
+        "citation_url": "https://www.mastercard.com/us/en/news-and-trends/stories/2026/recorded-future-annual-payment-fraud-report.html",
+        "doc_ref": "33_AI_Era_Frauds #31 (fraudulent merchant onboarding)",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph",
+        "transaction"
+      ],
+      "holdout": "none",
+      "generation": 4,
+      "parent_vector_id": "V009",
+      "mutation_mode": "recomposition",
+      "narrative": null
+    },
+    {
+      "vector_id": "V029",
+      "name": "Mule layering of scam proceeds (drift g2) (drift g4)",
+      "channel": "bank_transfer",
+      "ai_capability": "llm_text_generation",
+      "objective": "laundering_layering",
+      "chain": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "data_signature": "Generation 4 mutation of V019: widened residence_seconds, hop_delay_minutes, n_mules. Directed at channel_code, g_residence_seconds, hour_of_day.",
+      "parameters": {
+        "n_mules": [
+          0.0,
+          47.4414
+        ],
+        "hop_delay_minutes": [
+          0.0,
+          228.2081
+        ],
+        "split_ratio_jitter": [
+          0.05,
+          0.3
+        ],
+        "residence_seconds": [
+          0.0,
+          12406.5052
+        ]
+      },
+      "source": {
+        "case": "Mastercard's AI Garage doubled compromised-card detection by combining generative AI with graph technology over relationships between accounts, devices and cards; mule networks are the canonical graph-visible fraud.",
+        "stat": "2x compromised-card detection",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/stories/2024/inside-the-algorithm-how-gen-ai-and-graph-technology-are-cracking-down-on-card-sharks.html",
+        "doc_ref": "33_AI_Era_Frauds #27 (mule account networks); Research_Backed_Plan S1A",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph"
+      ],
+      "holdout": "none",
+      "generation": 4,
+      "parent_vector_id": "V019",
+      "mutation_mode": "parameter_drift",
+      "narrative": null
+    },
+    {
+      "vector_id": "V030",
+      "name": "Mule layering of scam proceeds (drift g2) (recomposed g4)",
+      "channel": "bank_transfer",
+      "ai_capability": "llm_text_generation",
+      "objective": "laundering_layering",
+      "chain": [
+        "open_mule_account",
+        "card_test_sweep",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "data_signature": "Generation 4 mutation of V019: inserted card_test_sweep at stage validate. Directed at channel_code, g_residence_seconds, hour_of_day.",
+      "parameters": {
+        "n_mules": [
+          0.0,
+          21.579
+        ],
+        "hop_delay_minutes": [
+          0.0,
+          114.6583
+        ],
+        "split_ratio_jitter": [
+          0.05,
+          0.3
+        ],
+        "residence_seconds": [
+          0.0,
+          7641.6974
+        ]
+      },
+      "source": {
+        "case": "Mastercard's AI Garage doubled compromised-card detection by combining generative AI with graph technology over relationships between accounts, devices and cards; mule networks are the canonical graph-visible fraud.",
+        "stat": "2x compromised-card detection",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/stories/2024/inside-the-algorithm-how-gen-ai-and-graph-technology-are-cracking-down-on-card-sharks.html",
+        "doc_ref": "33_AI_Era_Frauds #27 (mule account networks); Research_Backed_Plan S1A",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph"
+      ],
+      "holdout": "none",
+      "generation": 4,
+      "parent_vector_id": "V019",
+      "mutation_mode": "recomposition",
+      "narrative": null
+    },
+    {
+      "vector_id": "V031",
+      "name": "Mule layering of scam proceeds (drift g3) (drift g4)",
+      "channel": "bank_transfer",
+      "ai_capability": "llm_text_generation",
+      "objective": "laundering_layering",
+      "chain": [
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "data_signature": "Generation 4 mutation of V023: widened residence_seconds, hop_delay_minutes, n_mules. Directed at channel_code, g_residence_seconds, hour_of_day.",
+      "parameters": {
+        "n_mules": [
+          0.0,
+          41.364
+        ],
+        "hop_delay_minutes": [
+          0.0,
+          84.7154
+        ],
+        "split_ratio_jitter": [
+          0.0,
+          0.4878
+        ],
+        "residence_seconds": [
+          0.0,
+          9445.2481
+        ]
+      },
+      "source": {
+        "case": "Mastercard's AI Garage doubled compromised-card detection by combining generative AI with graph technology over relationships between accounts, devices and cards; mule networks are the canonical graph-visible fraud.",
+        "stat": "2x compromised-card detection",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/stories/2024/inside-the-algorithm-how-gen-ai-and-graph-technology-are-cracking-down-on-card-sharks.html",
+        "doc_ref": "33_AI_Era_Frauds #27 (mule account networks); Research_Backed_Plan S1A",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph"
+      ],
+      "holdout": "none",
+      "generation": 4,
+      "parent_vector_id": "V023",
+      "mutation_mode": "parameter_drift",
+      "narrative": null
+    },
+    {
+      "vector_id": "V032",
+      "name": "Mule layering of scam proceeds (drift g3) (recomposed g4)",
+      "channel": "bank_transfer",
+      "ai_capability": "llm_text_generation",
+      "objective": "laundering_layering",
+      "chain": [
+        "deepfake_kyc",
+        "open_mule_account",
+        "drain_single",
+        "layer_through_mules",
+        "cross_channel_hop"
+      ],
+      "data_signature": "Generation 4 mutation of V023: inserted deepfake_kyc at stage acquire. Directed at channel_code, g_residence_seconds, hour_of_day.",
+      "parameters": {
+        "n_mules": [
+          0.0,
+          31.9476
+        ],
+        "hop_delay_minutes": [
+          3,
+          55
+        ],
+        "split_ratio_jitter": [
+          0.0,
+          0.4878
+        ],
+        "residence_seconds": [
+          60,
+          5400
+        ]
+      },
+      "source": {
+        "case": "Mastercard's AI Garage doubled compromised-card detection by combining generative AI with graph technology over relationships between accounts, devices and cards; mule networks are the canonical graph-visible fraud.",
+        "stat": "2x compromised-card detection",
+        "citation_url": "https://www.mastercard.com/global/en/news-and-trends/stories/2024/inside-the-algorithm-how-gen-ai-and-graph-technology-are-cracking-down-on-card-sharks.html",
+        "doc_ref": "33_AI_Era_Frauds #27 (mule account networks); Research_Backed_Plan S1A",
+        "regulator_advisory": null
+      },
+      "expected_levels": [
+        "graph"
+      ],
+      "holdout": "none",
+      "generation": 4,
+      "parent_vector_id": "V023",
+      "mutation_mode": "recomposition",
+      "narrative": null
+    }
+  ]
+}

@@ -74,16 +74,16 @@ export function Legal({ kind }: { kind: 'terms' | 'privacy' }) {
         {terms ? 'What this is, and is not.' : 'Nothing is collected.'}
       </h1>
 
-      <div className="mt-12 max-w-[1000px] border-t border-[var(--color-ink)]">
+      <div className="mt-12 max-w-[1000px] border-t border-[var(--fg)]">
         {rows.map(([heading, body], i) => (
-          <section key={heading} className="grid gap-4 border-b border-[var(--color-rule)] py-6 md:grid-cols-[8rem_1fr]">
+          <section key={heading} className="grid gap-4 border-b border-[var(--rule)] py-6 md:grid-cols-[8rem_1fr]">
             <div>
-              <div className="mono text-[11px] text-[var(--color-ink-40)]">
+              <div className="mono text-[11px] text-[var(--fg-3)]">
                 {String(i + 1).padStart(2, '0')}
               </div>
               <h2 className="mono mt-1 text-[11px] uppercase tracking-[0.14em]">{heading}</h2>
             </div>
-            <p className="max-w-[68ch] text-[15px] leading-[1.6] text-[var(--color-ink-60)]">{body}</p>
+            <p className="max-w-[68ch] text-[15px] leading-[1.6] text-[var(--fg-2)]">{body}</p>
           </section>
         ))}
       </div>

@@ -691,3 +691,95 @@ The overlap corridor is real: separation_gap is negative and 7.3% of fraud score
 the 99.9th percentile of legitimate traffic. `fraud_above_legit_p99` reads 0.978 here
 against 0.913 at 300k, so that particular statistic is scale-sensitive and the agreed
 0.85-0.95 band only means something at a fixed scale. Not chasing it further.
+
+---
+
+# D-035 — The loop curve (21 Aug 2026)
+
+Five generations at 400k transactions, 8 vectors growing to 32.
+
+    G0   90.2%  #############################################
+    G1   96.4%  ################################################
+    G2   95.5%  ###############################################
+    G3   91.3%  #############################################
+    G4   94.1%  ###############################################
+
+**This is not a converging curve and it should not be presented as one.** The script's
+summary line reads "rising" because it compares the last value to the first, which is a
+crude test that this shape defeats: the series goes up, down, down, up inside a 6-point
+band. With 30 to 60 instances per generation that band is noise.
+
+What the run does show, and what the walkthrough should say instead: **detection holds
+between 90% and 96% while the attack set grows from 8 vectors to 32.** The detector is
+not improving round on round; it is not degrading either, against an attack surface that
+quadrupled.
+
+## The measurement is not clean, and that is the more useful finding
+
+Each generation adds vectors, so the population being measured changes every round. G0's
+90.2% over 8 vectors and G4's 94.1% over 32 are not the same quantity, in the same way
+the held-out AUC-PR slices were not comparable across prevalences. A curve built this way
+cannot separate "the detector hardened" from "the mix got easier".
+
+The fix, for whoever picks this up: hold a fixed evaluation set across generations, and
+report detection on **newly added vectors only** as a separate series. That second series
+is the one that answers the question the loop is actually asking, which is whether the
+attacker can still get through after the detector has seen its last idea.
+
+Not doing it now. Eight days left and the walkthrough is the larger risk.
+
+## What did work
+
+The strategist is directed, and demonstrably so. It read the miss log, found V006 at 11%
+without being told V006 was interesting, and drifted `n_payouts` - the parameter feeding
+the merchant-payout extraction. Later generations went after mule topology
+(`n_mules`, `split_ratio_jitter`) and at G3 it substituted `merchant_collusion_payout`
+with `agentic_purchase`, which is the extraction-rail dimension the boundary finding is
+about. It found the same axis we did, from the data.
+
+Validation accepted 24 of 24 proposals across four rounds. A 0% rejection rate is what
+deterministic mutation should produce and is not evidence the validator works; the tests
+that feed it malformed input are.
+
+One vector, V031, evaded completely at generation 4 (0% detection).
+
+---
+
+# D-036 — Interface: contrast, bands, density, scale
+
+## Contrast was a correctness bug, not a taste question
+
+Audited by walking every text node's computed style and calculating true contrast against
+the resolved background. **113 pieces of text under 12px failed 7:1. The worst was
+2.54:1** - 10px grey-on-beige, which would have been invisible on a projector.
+
+The muted tokens were solved for rather than sampled: on paper `--fg-2` is #3a3a34
+(10.2:1) and `--fg-3` is #4e4e46 (7.5:1); on ink they are #cfcdc4 (11.9:1) and #b3b1a7
+(8.8:1). 11px is now the floor everywhere, tracking on uppercase mono is 0.12em, and
+chart axis labels moved from 9px muted to 11px at --fg-2.
+
+Re-audited after: **0 failures, smallest text 11px.**
+
+The warning colour needed its own pair. Vermilion measures 4.65:1 on paper, fine for a
+55px figure and not fine for an 11px badge, so the badge uses #94290c on paper and
+#ff9a72 on ink.
+
+## Bands
+
+Colour is band-scoped. Every component reads --fg, --fg-2, --fg-3, --rule, --ground and
+--spot, so a section inverts without touching a single component. Sections 02, 04, 06 and
+the colophon are ink; the rest are paper. Each band carries its own hairline grid at the
+same pitch, so the field continues across the inversion instead of stopping at it.
+
+The spot colour has two variants for the same reason as the warning colour: viridian
+reads on paper and disappears on ink, so bands pick #0f5c4a or #4bbf95 in defender view
+and #c43d18 or #ff7a4d in attacker view. The inversion is still one state change.
+
+## Density and scale
+
+Section padding and gaps cut by roughly a third. One hero number per section at
+clamp(3.4rem, 9vw, 7rem) in the spot colour, which is also the single colour event on each
+band: 444,573 chains, the prevalence, pass-through accounts flagged, net value protected,
+instance recall, discriminator AUC. Figures went from 26px to 34px.
+
+Both 3D scenes are full-bleed within their sections rather than figures in a column.

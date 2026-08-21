@@ -99,6 +99,9 @@ function Helix({ generations, misses, selected, attacker, reduced }: HelixProps)
     invalidate();
   });
 
+  // three.js parses colours itself and cannot read a CSS custom property, so the band's
+  // ink and spot arrive as explicit hex rather than through the token system the rest of
+  // the page uses.
   const spot = attacker ? '#c43d18' : '#0f5c4a';
   const ink = '#14140f';
 

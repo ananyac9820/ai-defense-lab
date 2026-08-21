@@ -71,9 +71,14 @@ export const useStore = create<State>((set, get) => ({
  */
 export function applyPerspective(p: Perspective): void {
   const root = document.documentElement;
-  root.style.setProperty(
-    '--spot',
-    p === 'defender' ? 'var(--color-defend)' : 'var(--color-attack)'
-  );
+  // Two variants because a colour that reads on paper disappears on ink and the reverse.
+  // Bands pick whichever suits their ground, so the inversion stays one state change.
+  if (p === 'defender') {
+    root.style.setProperty('--spot-paper', '#0f5c4a');
+    root.style.setProperty('--spot-ink', '#4bbf95');
+  } else {
+    root.style.setProperty('--spot-paper', '#c43d18');
+    root.style.setProperty('--spot-ink', '#ff7a4d');
+  }
   root.dataset.perspective = p;
 }
