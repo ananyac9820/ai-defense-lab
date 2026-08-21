@@ -79,12 +79,17 @@ export function LinePlot({
             stroke={s.spot ? 'var(--spot)' : 'var(--fg)'}
             strokeWidth={s.spot ? 1.6 : 1}
             strokeDasharray={s.dashed ? '3 3' : undefined}
-            points={s.values.map((v, i) => `${x(i)},${y(v)}`).join(' ')}
+            points={s.values
+              .map((v, i) => (Number.isFinite(v) ? `${x(i)},${y(v)}` : null))
+              .filter(Boolean)
+              .join(' ')}
           />
           {s.spot &&
-            s.values.map((v, i) => (
-              <rect key={i} x={x(i) - 2.5} y={y(v) - 2.5} width={5} height={5} fill="var(--spot)" />
-            ))}
+            s.values.map((v, i) =>
+              Number.isFinite(v) ? (
+                <rect key={i} x={x(i) - 2.5} y={y(v) - 2.5} width={5} height={5} fill="var(--spot)" />
+              ) : null
+            )}
         </g>
       ))}
     </svg>

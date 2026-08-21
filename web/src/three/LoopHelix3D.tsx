@@ -34,21 +34,56 @@ function radiusFor(rate: number): number {
   return R_MAX - (R_MAX - R_MIN) * Math.max(0, Math.min(1, rate));
 }
 
+/**
+ * Two series, because one cannot answer the question on its own.
+ *
+ * The solid spiral is the FIXED evaluation set: generation 0's attack population, scored
+ * by every generation's model. Its population never changes, so a change in radius means
+ * the detector changed.
+ *
+ * The light spiral is NEW VECTORS ONLY: the mutations that generation introduced. It
+ * answers whether the attacker is still getting through after the detector has seen its
+ * last idea, which is the more interesting of the two.
+ *
+ * The gap between them is the thing to look at. Plotting only the current attack set,
+ * which is what this did first, produced a radius that encoded the changing mix rather
+ * than anything about the detector.
+ */
+function seriesOf(gen: Generation, key: 'fixed' | 'fresh'): number | null {
+  if (key === 'fixed') return gen.detection_rate_fixed_set ?? gen.detection_rate ?? null;
+  return gen.detection_rate_new_vectors ?? null;
+}
+
 function Helix({ generations, misses, selected, attacker, reduced }: HelixProps) {
   const group = useRef<THREE.Group>(null);
   const { invalidate } = useThree();
 
-  const { curve, rings, fragments, ticks } = useMemo(() => {
+  const { curve, freshCurve, rings, fragments, ticks } = useMemo(() => {
     const points: THREE.Vector3[] = [];
     const rings: { y: number; radius: number; generation: number; rate: number }[] = [];
     const fragments: { position: THREE.Vector3; generation: number }[] = [];
     const ticks: { position: THREE.Vector3; label: string; generation: number }[] = [];
 
+    const freshPoints: THREE.Vector3[] = [];
+
     generations.forEach((gen, index) => {
-      const rate = gen.detection_rate ?? gen.metrics_seen.recall;
+      const rate = seriesOf(gen, 'fixed') ?? gen.metrics_seen.recall;
       const nextGen = generations[index + 1];
-      const nextRate = nextGen ? (nextGen.detection_rate ?? nextGen.metrics_seen.recall) : rate;
+      const nextRate = nextGen ? (seriesOf(nextGen, 'fixed') ?? nextGen.metrics_seen.recall) : rate;
       const y0 = -index * TURN_HEIGHT;
+
+      const fresh = seriesOf(gen, 'fresh');
+      const nextFresh = nextGen ? seriesOf(nextGen, 'fresh') : fresh;
+      if (fresh != null) {
+        for (let s = 0; s <= TURN_SEGMENTS; s++) {
+          const t = s / TURN_SEGMENTS;
+          const r = radiusFor(fresh + ((nextFresh ?? fresh) - fresh) * t);
+          const angle = t * Math.PI * 2;
+          freshPoints.push(
+            new THREE.Vector3(Math.cos(angle) * r, y0 - t * TURN_HEIGHT, Math.sin(angle) * r)
+          );
+        }
+      }
 
       for (let s = 0; s <= TURN_SEGMENTS; s++) {
         const t = s / TURN_SEGMENTS;
@@ -87,6 +122,9 @@ function Helix({ generations, misses, selected, attacker, reduced }: HelixProps)
 
     return {
       curve: new THREE.BufferGeometry().setFromPoints(points),
+      freshCurve: freshPoints.length
+        ? new THREE.BufferGeometry().setFromPoints(freshPoints)
+        : null,
       rings,
       fragments,
       ticks,
@@ -124,6 +162,15 @@ function Helix({ generations, misses, selected, attacker, reduced }: HelixProps)
         <primitive object={curve} attach="geometry" />
         <lineBasicMaterial attach="material" color={ink} opacity={0.85} transparent />
       </line>
+
+      {/* new-vectors-only series, drawn in the spot colour so the gap between the two
+          spirals is the first thing visible */}
+      {freshCurve && (
+        <line>
+          <primitive object={freshCurve} attach="geometry" />
+          <lineBasicMaterial attach="material" color={spot} opacity={0.9} transparent />
+        </line>
+      )}
 
       {/* one reference circle per generation, in the plane of that turn */}
       {rings.map((ring) => {
@@ -199,7 +246,8 @@ export default function LoopHelix3D({
         />
       </Canvas>
       <div className="tag pointer-events-none absolute bottom-0 left-0">
-        radius = detection rate · each turn is one generation · fragments evaded
+        solid: fixed evaluation set · coloured: new vectors only · radius = detection
+        rate, so inward is better · fragments evaded
       </div>
     </div>
   );
