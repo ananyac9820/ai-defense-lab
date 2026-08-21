@@ -24,11 +24,11 @@ import { useTrack } from './lib/useMotion';
  * contrast ratio that dips to 4:1 for half a second looks fine on a desk and is
  * unreadable from the back of a room.
  */
-function Band({ tone, children }: { tone: 'paper' | 'ink'; children: React.ReactNode }) {
+function Band({ tone, children }: { tone: 'base' | 'raise'; children: React.ReactNode }) {
   const wipe = useTrack<HTMLDivElement>('enter');
   return (
     <div className={`band band-${tone}`}>
-      {tone === 'ink' && <div ref={wipe} className="band-wipe" aria-hidden />}
+      {tone === 'raise' && <div ref={wipe} className="band-wipe" aria-hidden />}
       <div className="depth-fore" aria-hidden />
       <div className="mx-auto max-w-[1360px] px-6">{children}</div>
     </div>
@@ -91,8 +91,8 @@ function Inversion() {
       <span
         className="px-2.5 py-1.5"
         style={{
-          background: attacker ? 'transparent' : '#0f5c4a',
-          color: attacker ? 'var(--fg-3)' : '#f3f2ee',
+          background: attacker ? 'transparent' : 'var(--defend)',
+          color: attacker ? 'var(--fg-3)' : 'var(--on-spot)',
         }}
       >
         Defender
@@ -100,8 +100,8 @@ function Inversion() {
       <span
         className="border-l border-[var(--fg)] px-2.5 py-1.5"
         style={{
-          background: attacker ? '#c43d18' : 'transparent',
-          color: attacker ? '#f3f2ee' : 'var(--fg-3)',
+          background: attacker ? 'var(--attack)' : 'transparent',
+          color: attacker ? 'var(--on-spot)' : 'var(--fg-3)',
         }}
       >
         Attacker
@@ -113,7 +113,7 @@ function Inversion() {
 function Header() {
   const { bundle } = useStore();
   return (
-    <header className="band band-paper sticky top-0 z-30 border-b border-[var(--fg)]">
+    <header className="band band-base sticky top-0 z-30 border-b border-[var(--fg)]">
       <div className="mx-auto flex max-w-[1360px] items-center gap-4 px-6 py-2.5">
         <a href="#/" className="mono text-[11px] uppercase tracking-[0.2em]">
           AI Defense Lab
@@ -280,7 +280,7 @@ export default function App() {
       <>
         <Header />
         <main className="relative">
-          <Band tone="paper">
+          <Band tone="base">
             <Legal kind={route} />
           </Band>
         </main>
@@ -294,8 +294,8 @@ export default function App() {
       <Header />
       <main className="relative">
         {error ? (
-          <div className="plate mt-20 p-4" style={{ borderColor: '#c43d18' }}>
-            <div className="tag" style={{ color: '#c43d18' }}>
+          <div className="plate mt-20 p-4" style={{ borderColor: 'var(--warn)' }}>
+            <div className="tag" style={{ color: 'var(--warn)' }}>
               artefact load failed
             </div>
             <p className="mono mt-2 text-[12px]">{error}</p>
@@ -308,14 +308,14 @@ export default function App() {
             {/* Alternating grounds. The scroll needs a pulse: one continuous field reads
                 as a default, and the paper sections only look deliberate once something
                 else sits next to them. Even sections invert. */}
-            <Band tone="paper"><Masthead /></Band>
-            <Band tone="paper"><Constellation /></Band>
-            <Band tone="ink"><Ledger /></Band>
-            <Band tone="paper"><Nebula /></Band>
-            <Band tone="ink"><Surface /></Band>
-            <Band tone="paper"><Helix /></Band>
-            <Band tone="ink"><Mirror /></Band>
-            <Band tone="ink"><Colophon /></Band>
+            <Band tone="base"><Masthead /></Band>
+            <Band tone="base"><Constellation /></Band>
+            <Band tone="raise"><Ledger /></Band>
+            <Band tone="base"><Nebula /></Band>
+            <Band tone="raise"><Surface /></Band>
+            <Band tone="base"><Helix /></Band>
+            <Band tone="raise"><Mirror /></Band>
+            <Band tone="raise"><Colophon /></Band>
           </>
         )}
       </main>

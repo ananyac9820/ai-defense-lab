@@ -15,54 +15,67 @@
   chosen by eye.
 */
 @theme {
-  --color-paper: #f3f2ee;
-  --color-ink: #14140f;
+  --color-ground-base: #0d1f17;
+  --color-ground-raise: #142c20;
+  --color-bone: #e8ede6;
 
   --font-display: 'Archivo', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'Courier New', monospace;
 }
 
 /*
-  Paper band. --fg-2 at #3a3a34 measures 10.2:1 on this ground and --fg-3 at #4e4e46
-  measures 7.5:1. Both were solved for rather than sampled.
+  Two grounds, both deep green, alternating down the page. Muted tokens are solved for
+  7:1 against the LIGHTER of the two, so every value clears the bar on both.
+
+  Measured against #142c20, the harder ground:
+    --fg    #e8ede6  12.5:1
+    --fg-2  #c9d2c6   9.6:1
+    --fg-3  #b4bdb2   7.7:1
+  and each is higher again on #0d1f17.
 */
 :root,
-.band-paper {
-  --ground: #f3f2ee;
-  --fg: #14140f;
-  --fg-2: #3a3a34;
-  --fg-3: #4e4e46;
-  --rule: rgba(20, 20, 15, 0.16);
-  --edge: rgba(20, 20, 15, 0.34);
-  --spot: var(--spot-paper, #0f5c4a);
-  /* The warning colour needs its own pair. Vermilion measures 4.65:1 on paper, which is
-     fine for a 34px figure and not fine for an 11px badge, so the badge gets a darker
-     shade on paper and a lighter one on ink. */
-  --warn: #94290c;
+.band-base {
+  --ground: #0d1f17;
+  --fg: #e8ede6;
+  --fg-2: #c9d2c6;
+  --fg-3: #b4bdb2;
+  --rule: rgba(232, 237, 230, 0.13);
+  --edge: rgba(232, 237, 230, 0.3);
+  --on-spot: #0d1f17;
+  --spot: var(--spot-live, #17e88f);
+  --spot-sm: var(--spot-sm-live, #17e88f);
+  --warn: var(--warn-live, #ffa07a);
   --grid: 88px;
 }
 
-/* Ink band. --fg-2 measures 11.9:1 and --fg-3 measures 8.8:1 against #0e0e0c. */
-.band-ink {
-  --ground: #0e0e0c;
-  --fg: #f3f2ee;
-  --fg-2: #cfcdc4;
-  --fg-3: #b3b1a7;
-  --rule: rgba(243, 242, 238, 0.18);
-  --edge: rgba(243, 242, 238, 0.34);
-  --spot: var(--spot-ink, #4bbf95);
-  --warn: #ff9a72;
+.band-raise {
+  --ground: #142c20;
+  --fg: #e8ede6;
+  --fg-2: #c9d2c6;
+  --fg-3: #b4bdb2;
+  --rule: rgba(232, 237, 230, 0.16);
+  --edge: rgba(232, 237, 230, 0.34);
+  --on-spot: #0d1f17;
 }
+
+/*
+  Vermilion at #c43d18 measures 2.86:1 on this ground and fails outright, so the attack
+  accent is lightened to #ff7a4d for graphics and large figures, and the warning badge
+  uses #ffa07a to clear 7:1 at 11px. The hue is unchanged; only the value moved, and it
+  moved because the audit demanded it rather than because it looked better.
+
+  Signal green needed nothing: #17e88f reads 9.2:1 on the raised ground.
+*/
 
 html {
   scroll-behavior: smooth;
-  background: var(--color-paper);
+  background: var(--color-ground-base);
 }
 
 body {
   margin: 0;
-  background: var(--color-paper);
-  color: var(--color-ink);
+  background: var(--color-ground-base);
+  color: var(--color-bone);
   font-family: var(--font-display);
   font-synthesis-weight: none;
   -webkit-font-smoothing: antialiased;
@@ -151,7 +164,7 @@ body {
 
 @utility inverted {
   background: var(--spot);
-  color: var(--ground);
+  color: var(--on-spot);
   padding: 0 0.25em;
   display: inline-block;
   line-height: 1.15;
@@ -162,8 +175,8 @@ body {
 }
 
 ::selection {
-  background: var(--color-ink);
-  color: var(--color-paper);
+  background: var(--spot);
+  color: var(--on-spot);
 }
 
 input[type='range'] {

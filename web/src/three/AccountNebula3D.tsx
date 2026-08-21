@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { LINE, spotFor } from '../lib/palette';
 
 /**
  * The Account Nebula.
@@ -131,9 +132,10 @@ function Graph({ nodes, edges, attacker, reduced, progress }: Props) {
   const { invalidate, camera } = useThree();
 
   const positions = useMemo(() => layout(nodes, edges), [nodes, edges]);
-  // Explicit hex for the same reason as the helix: WebGL materials cannot read CSS vars.
-  const spot = attacker ? '#c43d18' : '#0f5c4a';
-  const ink = '#14140f';
+  // WebGL materials cannot read CSS custom properties, so the scenes take real hex from
+  // lib/palette, which is the same source the CSS variables are set from.
+  const spot = spotFor(attacker);
+  const ink = LINE;
 
   const hot = useMemo(
     () => nodes.map((n, i) => ({ n, i })).filter(({ n }) => n.passthrough > 0.85),

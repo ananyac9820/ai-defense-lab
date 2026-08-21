@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { Generation, MissesFile } from '../lib/contracts';
+import { LINE, spotFor } from '../lib/palette';
 
 /**
  * The Loop Helix.
@@ -136,18 +137,17 @@ function Helix({ generations, misses, selected, attacker, reduced, progress }: H
   }, [generations, misses]);
 
   const { axisLine, curveLine, freshLine } = useMemo(() => {
-    const inkColour = attacker ? '#c43d18' : '#14140f';
-    const spotColour = attacker ? '#c43d18' : '#0f5c4a';
+    const spotColour = spotFor(attacker);
     const axis = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(0, 0.4, 0),
         new THREE.Vector3(0, -generations.length * TURN_HEIGHT - 0.2, 0),
       ]),
-      new THREE.LineBasicMaterial({ color: '#14140f', opacity: 0.28, transparent: true })
+      new THREE.LineBasicMaterial({ color: LINE, opacity: 0.28, transparent: true })
     );
     const main = new THREE.Line(
       curve,
-      new THREE.LineBasicMaterial({ color: '#14140f', opacity: 0.85, transparent: true })
+      new THREE.LineBasicMaterial({ color: LINE, opacity: 0.9, transparent: true })
     );
     const fresh = freshCurve
       ? new THREE.Line(
@@ -155,7 +155,6 @@ function Helix({ generations, misses, selected, attacker, reduced, progress }: H
           new THREE.LineBasicMaterial({ color: spotColour, opacity: 0.9, transparent: true })
         )
       : null;
-    void inkColour;
     return { axisLine: axis, curveLine: main, freshLine: fresh };
   }, [curve, freshCurve, generations.length, attacker]);
 
@@ -192,8 +191,8 @@ function Helix({ generations, misses, selected, attacker, reduced, progress }: H
   // three.js parses colours itself and cannot read a CSS custom property, so the band's
   // ink and spot arrive as explicit hex rather than through the token system the rest of
   // the page uses.
-  const spot = attacker ? '#c43d18' : '#0f5c4a';
-  const ink = '#14140f';
+  const spot = spotFor(attacker);
+  const ink = LINE;
 
   return (
     <group ref={group} position={[0, (generations.length - 1) * TURN_HEIGHT * 0.5, 0]}>
