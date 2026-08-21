@@ -24,6 +24,7 @@ import argparse
 import hashlib
 import json
 import subprocess
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import Any
 
@@ -217,12 +218,21 @@ def main(argv: list[str] | None = None) -> int:
     # generated before they existed: the held-out families were simply absent and the
     # evaluation reported on the wrong experiment. Stale-cache bugs produce numbers for
     # code you did not run, which is the worst failure mode available to this project.
+    # The key covers the attack set AND the simulator source. Attacks alone was not
+    # enough: editing a primitive changes every row in the ledger while leaving the
+    # vector definitions untouched, so a cache keyed on attacks would happily serve a
+    # ledger built by code that no longer exists.
+    simulator_source = b"".join(
+        (Path(__file__).resolve().parents[1] / "src" / "adl" / "generate" / name).read_bytes()
+        for name in ("simulator.py", "primitives.py")
+    )
     attacks_digest = hashlib.sha256(
         json.dumps(
             [(v["vector_id"], v["chain"], v.get("parameters"), v.get("holdout"))
              for v in attacks["vectors"]],
             sort_keys=True,
         ).encode()
+        + simulator_source
     ).hexdigest()[:10]
     cache_dir = (
         ARTIFACTS_DIR / "ledger_cache"

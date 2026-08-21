@@ -105,7 +105,11 @@ def main(argv: list[str] | None = None) -> int:
         # The more interesting question. If freshly mutated vectors are caught at a lower
         # rate than the fixed set, the attacker is staying ahead, and that is a finding
         # whichever direction it lands in.
-        fresh_ids = {v["vector_id"] for v in vectors if v.get("generation") == g}
+        # Only from generation 1. At generation 0 every vector is "new" by definition, so
+        # the series would start at a point that is not comparable with any later one.
+        fresh_ids = (
+            {v["vector_id"] for v in vectors if v.get("generation") == g} if g > 0 else set()
+        )
         fresh_recall = None
         if fresh_ids:
             frame = result.seen_frame
@@ -233,7 +237,7 @@ def main(argv: list[str] | None = None) -> int:
             "attacks": "attacks_loop.json",
             "ledger_dir": "ledger/",
             "demo_slice": "demo_slice.json",
-            "misses": [f"misses.g{g}.json" for g in range(args.generations)],
+            "misses": [f"misses.loop.g{g}.json" for g in range(args.generations)],
             "graph_snapshot": None,
         },
     }
