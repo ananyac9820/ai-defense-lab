@@ -130,9 +130,15 @@ def drift(
     plausible execution of the same attack rather than becoming a different one.
     """
     params = {k: list(v) if isinstance(v, list) else v for k, v in parent["parameters"].items()}
+    # Several features map to the same parameter, so deduplicate while preserving the
+    # order the pressure points came in. Without this the rationale reads
+    # "widened n_mules, n_mules, split_ratio_jitter", which looks like a bug in the log
+    # even though the drift itself was correct.
     wanted: list[str] = []
     for feature in targets:
-        wanted.extend(FEATURE_TO_PARAMS.get(feature, []))
+        for name in FEATURE_TO_PARAMS.get(feature, []):
+            if name not in wanted:
+                wanted.append(name)
 
     touched: list[str] = []
     for name in wanted:

@@ -249,7 +249,7 @@ export function Nebula() {
   const { bundle, perspective } = useStore();
   const attacker = perspective === 'attacker';
   const reduced = usePrefersReducedMotion();
-  const [nebulaRef, nebulaNear] = useNearViewport<HTMLDivElement>();
+  const [nebulaRef, nebulaNear, loadNebula] = useNearViewport<HTMLDivElement>();
 
   const graph = useMemo(() => {
     if (!bundle) return null;
@@ -336,7 +336,7 @@ export function Nebula() {
               />
             </Suspense>
           ) : (
-            <div className="tag grid h-[460px] place-items-center">graph loads on approach</div>
+            <SceneGate label="the graph" onLoad={loadNebula} />
           )}
 
           <div className="tag mt-6 mb-2">flat projection, the reduced-motion path</div>
@@ -554,20 +554,44 @@ const AccountNebula3D = lazy(() => import('../three/AccountNebula3D'));
  * three-second budget on a scene that is several screens down the page, so the chunk is
  * not fetched until the reader is nearly there.
  */
-function useNearViewport<T extends HTMLElement>(margin = '600px') {
+function useNearViewport<T extends HTMLElement>(margin = 600) {
   const ref = useRef<T>(null);
   const [near, setNear] = useState(false);
+
   useEffect(() => {
+    if (near) return;
     const node = ref.current;
-    if (!node || near) return;
-    const observer = new IntersectionObserver(
-      (entries) => entries.forEach((e) => e.isIntersecting && setNear(true)),
-      { rootMargin: margin }
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
+    if (!node) return;
+
+    // Measured on scroll rather than through IntersectionObserver. The observer worked
+    // locally and never fired on the deployed page under a driven browser, and a demo
+    // whose centrepiece depends on one API behaving is a demo with a way to fail in a
+    // room. A rect measurement on a passive scroll listener cannot not-fire.
+    const check = () => {
+      const rect = node.getBoundingClientRect();
+      if (rect.top < window.innerHeight + margin && rect.bottom > -margin) setNear(true);
+    };
+    check();
+    window.addEventListener('scroll', check, { passive: true });
+    window.addEventListener('resize', check, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', check);
+      window.removeEventListener('resize', check);
+    };
   }, [near, margin]);
-  return [ref, near] as const;
+
+  return [ref, near, () => setNear(true)] as const;
+}
+
+/** Placeholder that also lets a viewer force the scene, so nothing depends on scrolling. */
+function SceneGate({ label, onLoad }: { label: string; onLoad: () => void }) {
+  return (
+    <div className="grid h-[460px] place-items-center border border-[var(--color-rule)]">
+      <button onClick={onLoad} className="hit mono border border-[var(--color-ink)] px-3 py-1.5 text-[11px] uppercase tracking-[0.14em]">
+        load {label}
+      </button>
+    </div>
+  );
 }
 
 function usePrefersReducedMotion(): boolean {
@@ -588,7 +612,7 @@ export function Helix() {
   const { bundle, perspective, generation, setGeneration } = useStore();
   const attacker = perspective === 'attacker';
   const reduced = usePrefersReducedMotion();
-  const [helixRef, helixNear] = useNearViewport<HTMLDivElement>();
+  const [helixRef, helixNear, loadHelix] = useNearViewport<HTMLDivElement>();
   if (!bundle) return <Skeleton rows={5} label="reading the run manifest" />;
 
   const { manifest, misses } = bundle;
@@ -635,7 +659,7 @@ export function Helix() {
             />
           </Suspense>
         ) : (
-          <div className="tag grid h-[460px] place-items-center">helix loads on approach</div>
+          <SceneGate label="the helix" onLoad={loadHelix} />
         )}
       </div>
 
