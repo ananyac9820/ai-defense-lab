@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ENVIRONMENTS, useStore } from './lib/store';
 import { FixtureMark, Hatch, Leader, Plate, SectionMark } from './components/plate';
 import { Constellation, Helix, Ledger, Mirror, Nebula, Surface } from './sections/Sections';
 import { Legal } from './pages/Legal';
+import { prefersReducedMotion, remeasure } from './lib/motion';
+import { useTrack } from './lib/useMotion';
 
 /**
  * One continuous document.
@@ -13,13 +15,58 @@ import { Legal } from './pages/Legal';
  * because they are documents rather than views.
  */
 
-/** A full-bleed ground with the content held to the measure inside it. */
+/**
+ * A full-bleed ground with the content held to the measure inside it.
+ *
+ * Three depths of hairline field move at different rates, and the ink ground wipes in
+ * through the band's own top padding rather than at a fixed line. The wipe deliberately
+ * covers only padding and decorative zones: text never crosses a moving edge, because a
+ * contrast ratio that dips to 4:1 for half a second looks fine on a desk and is
+ * unreadable from the back of a room.
+ */
 function Band({ tone, children }: { tone: 'paper' | 'ink'; children: React.ReactNode }) {
+  const wipe = useTrack<HTMLDivElement>('enter');
   return (
     <div className={`band band-${tone}`}>
+      {tone === 'ink' && <div ref={wipe} className="band-wipe" aria-hidden />}
+      <div className="depth-fore" aria-hidden />
       <div className="mx-auto max-w-[1360px] px-6">{children}</div>
     </div>
   );
+}
+
+/**
+ * Pointer presence. One fixed element, transform only, written outside React so moving
+ * the mouse never renders. It sits below the content layer and only ever brightens the
+ * hairline field, so it cannot touch the contrast of any text.
+ */
+function Reticle() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (prefersReducedMotion()) return;
+    const el = ref.current;
+    if (!el) return;
+    let frame = 0;
+    let x = 0;
+    let y = 0;
+    const move = (e: PointerEvent) => {
+      x = e.clientX;
+      y = e.clientY;
+      if (!frame) {
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          el.style.setProperty('--mx', `${x}px`);
+          el.style.setProperty('--my', `${y}px`);
+        });
+      }
+    };
+    window.addEventListener('pointermove', move, { passive: true });
+    return () => {
+      window.removeEventListener('pointermove', move);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
+  return <div ref={ref} className="reticle" aria-hidden />;
 }
 
 function useHashRoute(): string {
@@ -221,6 +268,13 @@ export default function App() {
     void load();
   }, [load]);
 
+  // Artefacts arriving changes the height of nearly every section, so the scroll driver
+  // has to re-measure or every progress value is computed against a stale layout.
+  useEffect(() => {
+    const id = window.setTimeout(remeasure, 120);
+    return () => window.clearTimeout(id);
+  }, [error]);
+
   if (route === 'terms' || route === 'privacy') {
     return (
       <>
@@ -236,6 +290,7 @@ export default function App() {
 
   return (
     <>
+      <Reticle />
       <Header />
       <main className="relative">
         {error ? (

@@ -3,6 +3,7 @@ import { Figure, Hatch, Hero, Leader, Placeholder, Plate, SectionMark, Skeleton 
 import { BarPlot, ContributionPlot, LinePlot } from '../components/draw';
 import { formatInr, lift, pct } from '../lib/data';
 import { useStore } from '../lib/store';
+import { useTrack } from '../lib/useMotion';
 
 /**
  * The six views, written as sections of one document rather than pages of an app.
@@ -21,6 +22,7 @@ function Body({ children }: { children: React.ReactNode }) {
 export function Constellation() {
   const { bundle, perspective, selectedVector, selectVector } = useStore();
   const attacker = perspective === 'attacker';
+  const vectorList = useTrack<HTMLUListElement>();
   if (!bundle) return <Skeleton rows={5} label="reading attacks.json" />;
 
   const vectors = bundle.attacks.vectors;
@@ -71,11 +73,15 @@ export function Constellation() {
             <Figure label="Grid cells" value={`${cells.size}/343`} note="channel x capability x objective" />
           </div>
 
-          <ul className="mt-7 border-t border-[var(--fg)]">
+          <ul ref={vectorList} className="stagger mt-7 border-t border-[var(--fg)]">
             {vectors.map((v, i) => {
               const on = v.vector_id === selected.vector_id;
               return (
-                <li key={v.vector_id} className="border-b border-[var(--rule)]">
+                <li
+                  key={v.vector_id}
+                  className="border-b border-[var(--rule)]"
+                  style={{ '--i': i } as React.CSSProperties}
+                >
                   <button
                     onClick={() => selectVector(v.vector_id)}
                     className="hit group flex w-full items-baseline gap-4 py-3 text-left"
@@ -148,6 +154,7 @@ export function Constellation() {
 export function Ledger() {
   const { bundle, perspective } = useStore();
   const attacker = perspective === 'attacker';
+  const ledgerFigure = useTrack<SVGSVGElement>();
 
   const stats = useMemo(() => {
     if (!bundle) return null;
@@ -177,6 +184,7 @@ export function Ledger() {
   }, [bundle]);
 
   if (!bundle || !stats) return <Skeleton rows={4} label="reading the ledger" />;
+
 
   return (
     <section id="ledger" className="relative z-10 pt-14 pb-16">
@@ -210,7 +218,7 @@ export function Ledger() {
 
         <div>
           <div className="tag mb-2">volume per interval, fraud marked below the rule</div>
-          <svg viewBox="0 0 640 260" className="w-full">
+          <svg ref={ledgerFigure} viewBox="0 0 640 260" className="w-full">
             {stats.legit.map((v, i) => (
               <rect
                 key={`l${i}`}
@@ -222,7 +230,7 @@ export function Ledger() {
                 opacity={0.24}
               />
             ))}
-            <line x1={0} x2={640} y1={130} y2={130} stroke="var(--fg)" strokeWidth={1} />
+            <line className="draw" pathLength={1} x1={0} x2={640} y1={130} y2={130} stroke="var(--fg)" strokeWidth={1} />
             {stats.fraud.map((v, i) =>
               v > 0 ? (
                 <rect
@@ -260,6 +268,8 @@ export function Nebula() {
   const attacker = perspective === 'attacker';
   const reduced = usePrefersReducedMotion();
   const [nebulaRef, nebulaNear, loadNebula] = useNearViewport<HTMLDivElement>();
+  const nebulaTrack = useTrack<HTMLDivElement>('cover');
+  const nebulaProgress = useSceneProgress(nebulaTrack);
 
   const graph = useMemo(() => {
     if (!bundle) return null;
@@ -334,14 +344,22 @@ export function Nebula() {
 
       {/* Full bleed. The graph result is the payoff, so it gets the width of the page
           rather than a column inside it. */}
-      <div className="mt-7 -mx-6 md:-mx-10" ref={nebulaRef} style={{ minHeight: 520 }}>
+      <div ref={nebulaTrack} className="mt-7 -mx-6 md:-mx-10" style={{ minHeight: 520 }}>
+       <div ref={nebulaRef}>
         {nebulaNear ? (
           <Suspense fallback={<div className="tag grid h-[520px] place-items-center">loading the graph</div>}>
-            <AccountNebula3D nodes={nodes3d} edges={edges3d} attacker={attacker} reduced={reduced} />
+            <AccountNebula3D
+              nodes={nodes3d}
+              edges={edges3d}
+              attacker={attacker}
+              reduced={reduced}
+              progress={nebulaProgress}
+            />
           </Suspense>
         ) : (
           <SceneGate label="the graph" onLoad={loadNebula} />
         )}
+       </div>
       </div>
 
       <div className="mt-7 grid gap-8 lg:grid-cols-[1.2fr_1fr]">
@@ -611,6 +629,22 @@ function SceneGate({ label, onLoad }: { label: string; onLoad: () => void }) {
   );
 }
 
+/**
+ * Reads the scroll progress written onto an element by the driver. Passed to the 3D
+ * scenes as a getter so they can sample it inside their own frame loop, which keeps the
+ * whole camera path scroll-driven without React re-rendering at 60fps.
+ */
+function useSceneProgress(ref: React.RefObject<HTMLElement | null>) {
+  return useMemo(
+    () => () => {
+      const el = ref.current;
+      if (!el) return 1;
+      return parseFloat(getComputedStyle(el).getPropertyValue('--p') || '0') || 0;
+    },
+    [ref]
+  );
+}
+
 function usePrefersReducedMotion(): boolean {
   return useSyncExternalStore(
     (cb) => {
@@ -630,6 +664,8 @@ export function Helix() {
   const attacker = perspective === 'attacker';
   const reduced = usePrefersReducedMotion();
   const [helixRef, helixNear, loadHelix] = useNearViewport<HTMLDivElement>();
+  const helixTrack = useTrack<HTMLDivElement>('cover');
+  const helixProgress = useSceneProgress(helixTrack);
   if (!bundle) return <Skeleton rows={5} label="reading the run manifest" />;
 
   const { manifest, misses } = bundle;
@@ -660,7 +696,8 @@ export function Helix() {
         </h2>
       </div>
 
-      <div className="mt-7 -mx-6 md:-mx-10" ref={helixRef} style={{ minHeight: 520 }}>
+      <div ref={helixTrack} className="mt-7 -mx-6 md:-mx-10" style={{ minHeight: 520 }}>
+       <div ref={helixRef}>
         {helixNear ? (
           <Suspense
             fallback={
@@ -673,11 +710,13 @@ export function Helix() {
               selected={current.generation}
               attacker={attacker}
               reduced={reduced}
+              progress={helixProgress}
             />
           </Suspense>
         ) : (
           <SceneGate label="the helix" onLoad={loadHelix} />
         )}
+       </div>
       </div>
 
       <div className="mt-7 grid gap-8 lg:grid-cols-[1.4fr_1fr]">

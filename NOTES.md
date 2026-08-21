@@ -855,3 +855,54 @@ strong version; they now share the test.
 Caveat carried into the document: G0's new-vector figure is definitionally the whole set,
 since every vector is new at generation 0. The code now records None there; this run
 predates that fix by minutes and shows 94.7%.
+
+---
+
+# D-040 — Motion system (21 Aug 2026)
+
+Scroll-driven throughout. One requestAnimationFrame loop for the page writes a CSS
+custom property `--p` onto each registered element and a global `--sy`; every animation
+is plain CSS reading those. Nothing calls setState during a scroll, so scrolling never
+renders React, and only transform, opacity and stroke-dashoffset are ever written.
+
+Draw-on uses `pathLength="1"` on every path, which makes the dash maths unit-free and
+means no JavaScript ever measures a path.
+
+What was built: three depths of hairline field at differential rates; ink grounds that
+wipe in through band padding; plates, leaders and figures that overhang boundaries;
+draw-on for every SVG path; hero numbers that count up in tabular figures; staggered
+vector rows; scroll-driven camera descent on the Helix and orbit on the Nebula, with
+edges and turns drawing in sequence via setDrawRange; ambient breathing on the field; a
+pointer reticle that brightens hairlines only.
+
+## The wipe covers padding only
+
+Agreed constraint, and worth restating because it is the one place the motion brief and
+the contrast work could have collided. The ink ground wipes through the band's top
+padding and decorative zones. No text ever crosses a moving edge. A ratio that dips to
+4:1 for half a second is invisible as a defect on a desk and fatal in a room.
+
+## Fail-safe
+
+Every motion rule defaults to its FINAL state when `--p` is unset: `calc(1 - var(--p, 1))`
+draws a path completely, `var(--p, 1)` leaves opacity at 1. If the driver never starts -
+no rAF, an exception, an unsupported browser - the page degrades to the static document
+with every figure and label present. Verified: with the driver dead, all paths read
+dashoffset 0, all opacities 1, all hero numbers at full value.
+
+That is the same state prefers-reduced-motion produces, which means the reduced-motion
+path is not a separate code path that could rot.
+
+## What could not be verified here
+
+**requestAnimationFrame does not fire in the browser pane available to this session.**
+That is also the explanation for the screenshot, scrolling and compositing failures
+throughout this project - the pane is not running a frame loop at all.
+
+Verified: both audits clean on 542 text nodes (contrast 0 failures, smallest text 11px;
+design list 0 violations, 0 emoji, 0 em dashes), the DOM carries every motion element
+(8 depth layers, 4 wipes, 17 draw paths, 6 hero numbers, 20 rise-ins, 1 reticle), the
+build compiles, and the fail-safe lands correctly.
+
+NOT verified: parallax movement, draw-on progression, camera drift, count-up, stagger,
+reticle response. These need a real browser. Flagged rather than claimed.

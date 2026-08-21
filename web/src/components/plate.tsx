@@ -1,4 +1,6 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { prefersReducedMotion } from '../lib/motion';
+import { useTrack } from '../lib/useMotion';
 
 /**
  * The annotation vocabulary of the page.
@@ -22,8 +24,9 @@ export function Plate({
   className?: string;
   style?: CSSProperties;
 }) {
+  const ref = useTrack<HTMLDivElement>();
   return (
-    <div className={`plate ${className}`} style={style}>
+    <div ref={ref} className={`plate rise-in ${className}`} style={style}>
       {(title || index) && (
         <div className="flex items-center justify-between border-b border-[var(--fg)] px-2 py-1">
           <span className="mono text-[11px] uppercase tracking-[0.12em]">{title}</span>
@@ -46,9 +49,11 @@ export function Leader({
   className?: string;
 }) {
   const horizontal = direction !== 'down';
+  const ref = useTrack<HTMLSpanElement>();
   return (
     <span
-      className={`pointer-events-none inline-flex items-center ${className}`}
+      ref={ref}
+      className={`leader-draw pointer-events-none inline-flex items-center ${className}`}
       style={
         horizontal
           ? { width: length, flexDirection: direction === 'right' ? 'row' : 'row-reverse' }
@@ -67,8 +72,9 @@ export function Leader({
 
 /** Section number and rule, the way a drawing sheet numbers its views. */
 export function SectionMark({ index, title, note }: { index: string; title: string; note?: string }) {
+  const ref = useTrack<HTMLDivElement>();
   return (
-    <div className="flex items-baseline gap-3 border-t border-[var(--fg)] pt-2">
+    <div ref={ref} className="rise-in flex items-baseline gap-3 border-t border-[var(--fg)] pt-2">
       <span className="mono text-[11px] tracking-[0.18em]">{index}</span>
       <span className="mono text-[11px] uppercase tracking-[0.18em]">{title}</span>
       {note && <span className="tag ml-auto hidden md:block">{note}</span>}
@@ -183,13 +189,67 @@ export function Hero({
   caption: string;
   note?: string;
 }) {
+  const ref = useTrack<HTMLDivElement>();
+  const shown = useCountUp(value, ref);
   return (
-    <div className="border-t border-[var(--fg)] pt-3">
+    <div ref={ref} className="rise-in border-t border-[var(--fg)] pt-3">
       <div className="tag">{caption}</div>
-      <div className="hero-number mt-2">{value}</div>
+      <div className="hero-number mt-2">{shown}</div>
       {note && (
         <div className="tag mt-2 max-w-[46ch] normal-case tracking-[0.02em]">{note}</div>
       )}
     </div>
   );
+}
+
+
+/**
+ * Count a figure up as its section arrives.
+ *
+ * Driven by the element's own scroll progress rather than by a timer, so scrubbing back
+ * counts down again. Only the digits change: prefixes, suffixes and separators are
+ * preserved exactly, and the face is monospace with tabular figures, so the number never
+ * shifts width while it moves.
+ */
+function useCountUp(value: string, ref: React.RefObject<HTMLElement | null>): string {
+  const [shown, setShown] = useState(() => (prefersReducedMotion() ? value : null));
+  const raf = useRef(0);
+
+  useEffect(() => {
+    if (prefersReducedMotion()) {
+      setShown(value);
+      return;
+    }
+    const el = ref.current;
+    const match = value.match(/[\d.,]+/);
+    if (!el || !match) {
+      setShown(value);
+      return;
+    }
+    const target = parseFloat(match[0].replace(/,/g, ''));
+    if (!Number.isFinite(target)) {
+      setShown(value);
+      return;
+    }
+    const decimals = (match[0].split('.')[1] || '').length;
+    const grouped = match[0].includes(',');
+
+    const read = () => {
+      const p = parseFloat(getComputedStyle(el).getPropertyValue('--p') || '0');
+      const eased = 1 - Math.pow(1 - Math.min(1, Math.max(0, p)), 3);
+      const n = target * eased;
+      const text = grouped
+        ? n.toLocaleString('en-US', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals,
+          })
+        : n.toFixed(decimals);
+      setShown(value.replace(match[0], text));
+      raf.current = requestAnimationFrame(read);
+    };
+    raf.current = requestAnimationFrame(read);
+    return () => cancelAnimationFrame(raf.current);
+  }, [value, ref]);
+
+  return shown ?? value;
 }

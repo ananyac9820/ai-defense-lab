@@ -211,3 +211,201 @@ input[type='range']::-moz-range-thumb {
     opacity: 0.4;
   }
 }
+
+/* ============================================================================
+   MOTION
+   Scroll-driven throughout. Every rule below reads --p, written per element by
+   lib/motion.ts, or --sy, the global scroll offset. Transform, opacity and
+   stroke-dashoffset only: nothing here can trigger layout during a scroll.
+   Depth comes from differential motion and layering, never from shadow, blur or
+   glow, so the design audit stays clean.
+   ============================================================================ */
+
+/*
+  The hairline field, split into depths. One flat backdrop reads as printed; the same
+  ink at three rates reads as space. Rates are small on purpose - the grid should feel
+  like it has thickness, not like it is sliding.
+*/
+.band::before {
+  transform: translate3d(0, calc(var(--sy, 0) * -0.012px), 0);
+  will-change: transform;
+}
+
+.band::after {
+  content: '';
+  position: absolute;
+  inset: -20% 0;
+  z-index: 0;
+  pointer-events: none;
+  /* Registration crosses, the middle depth. */
+  background-image:
+    linear-gradient(to right, var(--rule) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--rule) 1px, transparent 1px);
+  background-size: 11px 1px, 1px 11px;
+  background-position: calc(var(--grid) * 2 - 5px) calc(var(--grid) * 2 - 0.5px);
+  opacity: 0.42;
+  transform: translate3d(0, calc(var(--sy, 0) * -0.045px), 0);
+  will-change: transform;
+}
+
+/* A third, coarser layer that moves fastest. Drawn as a wide sparse grid so it reads as
+   foreground rule work rather than as a second background. */
+.depth-fore {
+  position: absolute;
+  inset: -30% 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--rule) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--rule) 1px, transparent 1px);
+  background-size: calc(var(--grid) * 4) calc(var(--grid) * 4);
+  opacity: 0.5;
+  transform: translate3d(0, calc(var(--sy, 0) * -0.085px), 0);
+  will-change: transform;
+}
+
+/*
+  Band bleed. The ink ground wipes in through the band's own padding, which carries no
+  text - text never crosses a moving edge, because at 4:1 for half a second it looks
+  fine on a desk and fails in a room.
+*/
+.band-wipe {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -160px;
+  height: 170px;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--ground);
+  transform-origin: bottom center;
+  transform: scaleY(var(--p, 0));
+  will-change: transform;
+}
+
+/* Elements that hang across a boundary and keep moving as the next band arrives. */
+.overhang {
+  transform: translate3d(0, calc((var(--p, 0) - 0.5) * -26px), 0);
+  will-change: transform;
+}
+
+/* --- draw-on ---------------------------------------------------------------
+   Paths carry pathLength="1", so the dash maths is unit-free and no JavaScript
+   measures anything. */
+.draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - var(--p, 1));
+}
+
+/* Staggered siblings: each child starts a little later than the last. */
+.draw-seq > * {
+  stroke-dasharray: 1;
+  stroke-dashoffset: clamp(0, calc(1 - (var(--p, 1) * 1.9 - var(--i, 0) * 0.06)), 1);
+}
+
+/* Marks that appear once their line has drawn. */
+.fade-in {
+  opacity: clamp(0, calc(var(--p, 1) * 1.4 - 0.25), 1);
+}
+
+.rise-in {
+  opacity: clamp(0, calc(var(--p, 1) * 1.6 - 0.15), 1);
+  transform: translate3d(0, calc((1 - var(--p, 1)) * 14px), 0);
+}
+
+/* Rows that stagger in. --i is set per row. */
+.stagger > * {
+  opacity: clamp(0, calc(var(--p, 1) * 2.4 - var(--i, 0) * 0.16), 1);
+  transform: translate3d(calc((1 - clamp(0, calc(var(--p, 1) * 2.4 - var(--i, 0) * 0.16), 1)) * -10px), 0, 0);
+}
+
+/* Leader lines extend from their anchor. */
+.leader-draw {
+  transform: scaleX(clamp(0.04, var(--p, 1), 1));
+  transform-origin: left center;
+}
+
+/* --- ambient ---------------------------------------------------------------
+   The only motion not tied to scroll. Slow enough that it reads as the page being
+   alive rather than as something animating. */
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.42;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.band::after {
+  animation: breathe 14s ease-in-out infinite;
+}
+
+@keyframes mark-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.78;
+  }
+}
+
+.depth-fore {
+  animation: mark-pulse 19s ease-in-out infinite;
+}
+
+/* --- cursor presence -------------------------------------------------------
+   A hairline brightening within a radius of the pointer. One element, transform only,
+   and it never sits above text. */
+.reticle {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 260px;
+  height: 260px;
+  margin: -130px 0 0 -130px;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle, var(--rule) 0%, transparent 62%);
+  transform: translate3d(var(--mx, 0px), var(--my, 0px), 0);
+  transition: opacity 240ms linear;
+}
+
+body:hover .reticle {
+  opacity: 1;
+}
+
+/* --- reduced motion --------------------------------------------------------
+   Everything lands complete. No parallax, no drawing, no ambient drift, and every
+   figure and label present exactly as it would be at the end of the animation. */
+@media (prefers-reduced-motion: reduce) {
+  .band::before,
+  .band::after,
+  .depth-fore,
+  .overhang {
+    transform: none !important;
+    animation: none !important;
+  }
+  .band-wipe {
+    display: none;
+  }
+  .draw,
+  .draw-seq > * {
+    stroke-dashoffset: 0 !important;
+  }
+  .fade-in,
+  .rise-in,
+  .stagger > * {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .leader-draw {
+    transform: none !important;
+  }
+  .reticle {
+    display: none;
+  }
+}
