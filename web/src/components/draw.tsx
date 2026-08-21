@@ -13,7 +13,7 @@ export interface Series {
   spot?: boolean;
 }
 
-const PAD = { top: 10, right: 14, bottom: 20, left: 34 };
+const PAD = { top: 12, right: 16, bottom: 26, left: 44 };
 
 export function LinePlot({
   series,
@@ -44,7 +44,7 @@ export function LinePlot({
             x2={w - PAD.right}
             y1={y(t * yMax)}
             y2={y(t * yMax)}
-            stroke="var(--color-rule)"
+            stroke="var(--rule)"
             strokeWidth={1}
           />
           <text
@@ -52,8 +52,8 @@ export function LinePlot({
             y={y(t * yMax) + 3}
             textAnchor="end"
             className="mono"
-            fontSize={9}
-            fill="var(--color-ink-40)"
+            fontSize={11}
+            fill="var(--fg-2)"
           >
             {format(t * yMax)}
           </text>
@@ -66,8 +66,8 @@ export function LinePlot({
           y={height - 6}
           textAnchor="middle"
           className="mono"
-          fontSize={9}
-          fill="var(--color-ink-40)"
+          fontSize={11}
+          fill="var(--fg-2)"
         >
           {label}
         </text>
@@ -76,7 +76,7 @@ export function LinePlot({
         <g key={s.label}>
           <polyline
             fill="none"
-            stroke={s.spot ? 'var(--spot)' : 'var(--color-ink)'}
+            stroke={s.spot ? 'var(--spot)' : 'var(--fg)'}
             strokeWidth={s.spot ? 1.6 : 1}
             strokeDasharray={s.dashed ? '3 3' : undefined}
             points={s.values.map((v, i) => `${x(i)},${y(v)}`).join(' ')}
@@ -115,7 +115,7 @@ export function BarPlot({
         x2={w - PAD.right}
         y1={PAD.top + innerH}
         y2={PAD.top + innerH}
-        stroke="var(--color-ink)"
+        stroke="var(--fg)"
         strokeWidth={1}
       />
       {values.map((v, i) => {
@@ -127,15 +127,15 @@ export function BarPlot({
               y={PAD.top + innerH - h}
               width={bw * 0.56}
               height={h}
-              fill={v < 0 ? 'var(--color-attack)' : 'var(--color-ink)'}
+              fill={v < 0 ? 'var(--attack)' : 'var(--fg)'}
             />
             <text
               x={PAD.left + i * bw + bw / 2}
               y={PAD.top + innerH - h - 4}
               textAnchor="middle"
               className="mono"
-              fontSize={9}
-              fill="var(--color-ink-60)"
+              fontSize={11}
+              fill="var(--fg-2)"
             >
               {format(v)}
             </text>
@@ -144,8 +144,8 @@ export function BarPlot({
               y={height - 6}
               textAnchor="middle"
               className="mono"
-              fontSize={8}
-              fill="var(--color-ink-40)"
+              fontSize={11}
+              fill="var(--fg-2)"
             >
               {labels[i]}
             </text>
@@ -171,7 +171,7 @@ export function ContributionPlot({
 
   return (
     <svg viewBox={`0 0 ${w} ${height}`} className="w-full" role="img">
-      <line x1={mid} x2={mid} y1={0} y2={height} stroke="var(--color-ink)" strokeWidth={1} />
+      <line x1={mid} x2={mid} y1={0} y2={height} stroke="var(--fg)" strokeWidth={1} />
       {rows.map((r, i) => {
         const len = (Math.abs(r.value) / max) * 250;
         const negative = r.value < 0;
@@ -182,15 +182,15 @@ export function ContributionPlot({
               y={i * rh + rh * 0.28}
               width={len}
               height={rh * 0.44}
-              fill={negative ? 'var(--color-attack)' : 'var(--color-ink)'}
+              fill={negative ? 'var(--attack)' : 'var(--fg)'}
             />
             <text
               x={negative ? mid + 8 : mid - 8}
               y={i * rh + rh * 0.62}
               textAnchor={negative ? 'start' : 'end'}
               className="mono"
-              fontSize={9}
-              fill="var(--color-ink-60)"
+              fontSize={11}
+              fill="var(--fg-2)"
             >
               {r.feature}
             </text>

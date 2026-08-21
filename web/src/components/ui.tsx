@@ -53,7 +53,7 @@ export function Metric({
         {lift != null && (
           <span
             className="tabular text-sm"
-            style={{ color: lift >= 0 ? 'var(--accent)' : 'var(--color-attack-2)' }}
+            style={{ color: lift >= 0 ? 'var(--spot)' : 'var(--color-attack-2)' }}
           >
             {lift >= 0 ? '+' : ''}
             {lift.toFixed(0)}% vs baseline
@@ -72,9 +72,9 @@ export function Chip({ children, tone = 'muted' }: { children: ReactNode; tone?:
       style={
         tone === 'accent'
           ? {
-              borderColor: 'color-mix(in oklab, var(--accent) 45%, transparent)',
-              color: 'var(--accent)',
-              background: 'color-mix(in oklab, var(--accent) 10%, transparent)',
+              borderColor: 'color-mix(in oklab, var(--spot) 45%, transparent)',
+              color: 'var(--spot)',
+              background: 'color-mix(in oklab, var(--spot) 10%, transparent)',
             }
           : { borderColor: 'var(--color-edge)', color: 'var(--color-slate)' }
       }
@@ -91,9 +91,9 @@ export function FixtureBadge({ isFixture }: { isFixture: boolean }) {
     <div
       className="rounded-full border px-3 py-1 text-[11px] tracking-[0.16em] uppercase"
       style={{
-        borderColor: 'color-mix(in oklab, var(--color-attack) 50%, transparent)',
-        color: 'var(--color-attack)',
-        background: 'color-mix(in oklab, var(--color-attack) 12%, transparent)',
+        borderColor: 'color-mix(in oklab, var(--attack) 50%, transparent)',
+        color: 'var(--attack)',
+        background: 'color-mix(in oklab, var(--attack) 12%, transparent)',
       }}
       title="Fixture data. Shapes are real, numbers are invented. Replaced by live artefacts in Phase 5."
     >
@@ -111,9 +111,9 @@ export function PlaceholderBadge({ id, what }: { id: string; what: string }) {
     <span
       className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] tracking-[0.14em] uppercase"
       style={{
-        borderColor: 'color-mix(in oklab, var(--color-attack) 55%, transparent)',
-        color: 'var(--color-attack)',
-        background: 'color-mix(in oklab, var(--color-attack) 12%, transparent)',
+        borderColor: 'color-mix(in oklab, var(--attack) 55%, transparent)',
+        color: 'var(--attack)',
+        background: 'color-mix(in oklab, var(--attack) 12%, transparent)',
       }}
       title={`${id}: ${what}`}
     >

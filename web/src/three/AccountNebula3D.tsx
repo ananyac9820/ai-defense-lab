@@ -128,7 +128,9 @@ function Graph({ nodes, edges, attacker, reduced }: Props) {
   const { invalidate } = useThree();
 
   const positions = useMemo(() => layout(nodes, edges), [nodes, edges]);
+  // Explicit hex for the same reason as the helix: WebGL materials cannot read CSS vars.
   const spot = attacker ? '#c43d18' : '#0f5c4a';
+  const ink = '#14140f';
 
   const hot = useMemo(
     () => nodes.map((n, i) => ({ n, i })).filter(({ n }) => n.passthrough > 0.85),
@@ -184,12 +186,12 @@ function Graph({ nodes, edges, attacker, reduced }: Props) {
     <group ref={group}>
       <lineSegments>
         <primitive object={edgeGeometry} attach="geometry" />
-        <lineBasicMaterial attach="material" color="#14140f" opacity={0.22} transparent />
+        <lineBasicMaterial attach="material" color={ink} opacity={0.22} transparent />
       </lineSegments>
 
       <instancedMesh ref={ordinary} args={[undefined, undefined, Math.max(cool.length, 1)]}>
         <boxGeometry args={[1, 1, 1]} />
-        <meshBasicMaterial color="#14140f" opacity={0.4} transparent wireframe />
+        <meshBasicMaterial color={ink} opacity={0.4} transparent wireframe />
       </instancedMesh>
 
       <instancedMesh ref={flagged} args={[undefined, undefined, Math.max(hot.length, 1)]}>

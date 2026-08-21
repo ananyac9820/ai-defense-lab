@@ -13,6 +13,15 @@ import { Legal } from './pages/Legal';
  * because they are documents rather than views.
  */
 
+/** A full-bleed ground with the content held to the measure inside it. */
+function Band({ tone, children }: { tone: 'paper' | 'ink'; children: React.ReactNode }) {
+  return (
+    <div className={`band band-${tone}`}>
+      <div className="mx-auto max-w-[1360px] px-6">{children}</div>
+    </div>
+  );
+}
+
 function useHashRoute(): string {
   const [route, setRoute] = useState(() => window.location.hash.replace(/^#\/?/, ''));
   useEffect(() => {
@@ -29,23 +38,23 @@ function Inversion() {
   return (
     <button
       onClick={flip}
-      className="hit mono flex items-stretch border border-[var(--color-ink)] text-[10px] uppercase tracking-[0.16em]"
+      className="hit mono flex items-stretch border border-[var(--fg)] text-[11px] uppercase tracking-[0.1em]"
       aria-label={`Switch to ${attacker ? 'defender' : 'attacker'} view`}
     >
       <span
         className="px-2.5 py-1.5"
         style={{
-          background: attacker ? 'transparent' : 'var(--color-defend)',
-          color: attacker ? 'var(--color-ink-40)' : 'var(--color-paper)',
+          background: attacker ? 'transparent' : '#0f5c4a',
+          color: attacker ? 'var(--fg-3)' : '#f3f2ee',
         }}
       >
         Defender
       </span>
       <span
-        className="border-l border-[var(--color-ink)] px-2.5 py-1.5"
+        className="border-l border-[var(--fg)] px-2.5 py-1.5"
         style={{
-          background: attacker ? 'var(--color-attack)' : 'transparent',
-          color: attacker ? 'var(--color-paper)' : 'var(--color-ink-40)',
+          background: attacker ? '#c43d18' : 'transparent',
+          color: attacker ? '#f3f2ee' : 'var(--fg-3)',
         }}
       >
         Attacker
@@ -57,15 +66,15 @@ function Inversion() {
 function Header() {
   const { bundle } = useStore();
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--color-ink)] bg-[var(--color-paper)]">
+    <header className="band band-paper sticky top-0 z-30 border-b border-[var(--fg)]">
       <div className="mx-auto flex max-w-[1360px] items-center gap-4 px-6 py-2.5">
         <a href="#/" className="mono text-[11px] uppercase tracking-[0.2em]">
           AI Defense Lab
         </a>
         <span className="tag hidden md:inline">Team Code Ops / GFF 2026</span>
-        <nav className="mono ml-auto hidden gap-4 text-[10px] uppercase tracking-[0.14em] lg:flex">
+        <nav className="mono ml-auto hidden gap-4 text-[11px] uppercase tracking-[0.1em] lg:flex">
           {ENVIRONMENTS.map((e) => (
-            <a key={e.id} href={`#${e.id}`} className="hit text-[var(--color-ink-60)]">
+            <a key={e.id} href={`#${e.id}`} className="hit text-[var(--fg-2)]">
               {e.index} {e.pillar}
             </a>
           ))}
@@ -83,8 +92,8 @@ function Masthead() {
   const m = bundle?.manifest;
 
   return (
-    <section className="relative z-10 pt-14">
-      <div className="grid gap-8 lg:grid-cols-[1.5fr_1fr]">
+    <section className="relative z-10 pt-10 pb-12">
+      <div className="grid gap-8 lg:grid-cols-[1.6fr_1fr]">
         <div>
           <div className="tag">Mastercard Innovation Challenge / submission dossier</div>
           <h1 className="display mt-4 text-[clamp(3rem,9vw,7.5rem)]">
@@ -92,9 +101,9 @@ function Masthead() {
             <br />
             BY DESIGN.
           </h1>
-          <div className="mt-6 flex items-start gap-4">
+          <div className="mt-5 flex items-start gap-4">
             <Leader length={70} className="mt-3 hidden md:flex" />
-            <p className="max-w-[52ch] text-[15px] leading-[1.55] text-[var(--color-ink-60)]">
+            <p className="max-w-[52ch] text-[15px] leading-[1.55] text-[var(--fg-2)]">
               We play the attacker and the defender, and make each one improve the other. The
               same world, read from either side: a mule network is a route from one and a
               detection surface from the other.{' '}
@@ -116,20 +125,20 @@ function Masthead() {
                 ].map(([k, v]) => (
                   <div
                     key={k}
-                    className="flex justify-between border-b border-[var(--color-rule)] py-1 last:border-0"
+                    className="flex justify-between border-b border-[var(--rule)] py-1 last:border-0"
                   >
-                    <dt className="text-[var(--color-ink-40)]">{k}</dt>
+                    <dt className="text-[var(--fg-3)]">{k}</dt>
                     <dd>{v}</dd>
                   </div>
                 ))}
               </dl>
             ) : (
-              <div className="mono text-[11px] text-[var(--color-ink-40)]">reading run manifest</div>
+              <div className="mono text-[11px] text-[var(--fg-3)]">reading run manifest</div>
             )}
           </Plate>
 
-          <Plate title="scope boundary" index="s9" className="mt-6 lg:ml-10">
-            <p className="text-[12px] leading-[1.5] text-[var(--color-ink-60)]">
+          <Plate title="scope boundary" index="s9" className="mt-4 lg:ml-10">
+            <p className="text-[12px] leading-[1.5] text-[var(--fg-2)]">
               This repository generates synthetic data. It does not generate attack tooling.
               Records, session events and graph edges, in full detail. No voice cloning, no
               phishing generators, no deepfake code, nothing that can reach a live endpoint.
@@ -138,7 +147,7 @@ function Masthead() {
         </div>
       </div>
 
-      <Hatch h={14} className="mt-16" />
+      <Hatch h={14} className="mt-10" />
     </section>
   );
 }
@@ -146,9 +155,9 @@ function Masthead() {
 function Colophon() {
   const { bundle } = useStore();
   return (
-    <section id="colophon" className="relative z-10 pt-28 pb-20">
+    <section id="colophon" className="relative z-10 pt-14 pb-16">
       <SectionMark index="07" title="Colophon" />
-      <div className="mt-8 grid gap-10 lg:grid-cols-3">
+      <div className="mt-6 grid gap-8 lg:grid-cols-3">
         <div>
           <div className="tag">reproduction</div>
           <p className="mono mt-2 text-[11px] leading-relaxed">
@@ -158,13 +167,13 @@ function Colophon() {
             <br />
             python scripts/reproduce.py
           </p>
-          <p className="mt-3 text-[13px] leading-[1.5] text-[var(--color-ink-60)]">
+          <p className="mt-3 text-[13px] leading-[1.5] text-[var(--fg-2)]">
             Every reported number regenerates from one command and one seed on a clean clone.
           </p>
         </div>
         <div>
           <div className="tag">reference data</div>
-          <p className="mt-2 text-[13px] leading-[1.5] text-[var(--color-ink-60)]">
+          <p className="mt-2 text-[13px] leading-[1.5] text-[var(--fg-2)]">
             IEEE-CIS and PaySim calibrate distributions. Neither supplies a row, and neither is
             redistributed here. Only the derived profile is committed.
           </p>
@@ -172,12 +181,12 @@ function Colophon() {
         <div>
           <div className="tag">documents</div>
           <ul className="mono mt-2 text-[11px]">
-            <li className="border-b border-[var(--color-rule)] py-1">
+            <li className="border-b border-[var(--rule)] py-1">
               <a className="hit underline underline-offset-2" href="#/terms">
                 Terms of use
               </a>
             </li>
-            <li className="border-b border-[var(--color-rule)] py-1">
+            <li className="border-b border-[var(--rule)] py-1">
               <a className="hit underline underline-offset-2" href="#/privacy">
                 Privacy notice
               </a>
@@ -195,7 +204,7 @@ function Colophon() {
           </ul>
         </div>
       </div>
-      <div className="tag mt-14 border-t border-[var(--color-ink)] pt-3">
+      <div className="tag mt-10 border-t border-[var(--fg)] pt-3">
         {bundle?.manifest.is_fixture
           ? 'Rendering fixture artefacts. Shapes are real; numbers are invented and marked.'
           : 'Rendering live artefacts from artifacts/published.'}
@@ -215,10 +224,11 @@ export default function App() {
   if (route === 'terms' || route === 'privacy') {
     return (
       <>
-        <div className="ground" aria-hidden />
         <Header />
-        <main className="relative mx-auto max-w-[1360px] px-6">
-          <Legal kind={route} />
+        <main className="relative">
+          <Band tone="paper">
+            <Legal kind={route} />
+          </Band>
         </main>
       </>
     );
@@ -226,12 +236,11 @@ export default function App() {
 
   return (
     <>
-      <div className="ground" aria-hidden />
       <Header />
-      <main className="relative mx-auto max-w-[1360px] px-6">
+      <main className="relative">
         {error ? (
-          <div className="plate mt-20 p-4" style={{ borderColor: 'var(--color-attack)' }}>
-            <div className="tag" style={{ color: 'var(--color-attack)' }}>
+          <div className="plate mt-20 p-4" style={{ borderColor: '#c43d18' }}>
+            <div className="tag" style={{ color: '#c43d18' }}>
               artefact load failed
             </div>
             <p className="mono mt-2 text-[12px]">{error}</p>
@@ -241,14 +250,17 @@ export default function App() {
           </div>
         ) : (
           <>
-            <Masthead />
-            <Constellation />
-            <Ledger />
-            <Nebula />
-            <Surface />
-            <Helix />
-            <Mirror />
-            <Colophon />
+            {/* Alternating grounds. The scroll needs a pulse: one continuous field reads
+                as a default, and the paper sections only look deliberate once something
+                else sits next to them. Even sections invert. */}
+            <Band tone="paper"><Masthead /></Band>
+            <Band tone="paper"><Constellation /></Band>
+            <Band tone="ink"><Ledger /></Band>
+            <Band tone="paper"><Nebula /></Band>
+            <Band tone="ink"><Surface /></Band>
+            <Band tone="paper"><Helix /></Band>
+            <Band tone="ink"><Mirror /></Band>
+            <Band tone="ink"><Colophon /></Band>
           </>
         )}
       </main>

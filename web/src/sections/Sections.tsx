@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { Figure, Hatch, Leader, Placeholder, Plate, SectionMark, Skeleton } from '../components/plate';
+import { Figure, Hatch, Hero, Leader, Placeholder, Plate, SectionMark, Skeleton } from '../components/plate';
 import { BarPlot, ContributionPlot, LinePlot } from '../components/draw';
 import { formatInr, lift, pct } from '../lib/data';
 import { useStore } from '../lib/store';
@@ -13,7 +13,7 @@ import { useStore } from '../lib/store';
  */
 
 function Body({ children }: { children: React.ReactNode }) {
-  return <p className="max-w-[62ch] text-[15px] leading-[1.55] text-[var(--color-ink-60)]">{children}</p>;
+  return <p className="max-w-[62ch] text-[15px] leading-[1.55] text-[var(--fg-2)]">{children}</p>;
 }
 
 /* ------------------------------------------------------------------ 01 IDENTIFY */
@@ -29,10 +29,10 @@ export function Constellation() {
   const cells = new Set(vectors.map((v) => `${v.channel}|${v.ai_capability}|${v.objective}`));
 
   return (
-    <section id="constellation" className="relative z-10 pt-24">
+    <section id="constellation" className="relative z-10 pt-14 pb-16">
       <SectionMark index="01" title="Identify" note="compositional attack grammar" />
 
-      <div className="mt-10 grid gap-10 lg:grid-cols-[1.35fr_1fr]">
+      <div className="mt-7 grid gap-8 lg:grid-cols-[1.35fr_1fr]">
         <div>
           <h2 className="display text-[clamp(2.4rem,5.2vw,4.2rem)]">
             {attacker ? (
@@ -59,24 +59,29 @@ export function Constellation() {
             </Body>
           </div>
 
-          <div className="mt-8 grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-4">
+          <Hero
+            value="444,573"
+            caption="valid chains in the grammar"
+            note="The space the red team searches. Nineteen primitives, five stages, composition rules."
+          />
+
+          <div className="mt-7 grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-4">
             <Figure label="Vectors" value={String(vectors.length)} note="generation 0" />
             <Figure label="Primitives" value={`${primitives.size}/19`} />
             <Figure label="Grid cells" value={`${cells.size}/343`} note="channel x capability x objective" />
-            <Figure label="Chain space" value="444,573" />
           </div>
 
-          <ul className="mt-10 border-t border-[var(--color-ink)]">
+          <ul className="mt-7 border-t border-[var(--fg)]">
             {vectors.map((v, i) => {
               const on = v.vector_id === selected.vector_id;
               return (
-                <li key={v.vector_id} className="border-b border-[var(--color-rule)]">
+                <li key={v.vector_id} className="border-b border-[var(--rule)]">
                   <button
                     onClick={() => selectVector(v.vector_id)}
                     className="hit group flex w-full items-baseline gap-4 py-3 text-left"
                     style={{ color: on ? 'var(--spot)' : undefined }}
                   >
-                    <span className="mono w-8 text-[11px] text-[var(--color-ink-40)]">
+                    <span className="mono w-8 text-[11px] text-[var(--fg-3)]">
                       {String(i + 1).padStart(2, '0')}
                     </span>
                     <span className="mono w-12 text-[11px]">{v.vector_id}</span>
@@ -98,7 +103,7 @@ export function Constellation() {
             <div className="text-[17px] leading-tight">{selected.name}</div>
 
             <div className="tag mt-4">documented incident</div>
-            <p className="mt-1 text-[13px] leading-[1.5] text-[var(--color-ink-60)]">
+            <p className="mt-1 text-[13px] leading-[1.5] text-[var(--fg-2)]">
               {selected.source.case}
             </p>
             {selected.source.stat && (
@@ -118,15 +123,15 @@ export function Constellation() {
             <Hatch h={10} className="my-4" />
 
             <div className="tag">observable footprint</div>
-            <p className="mt-1 text-[13px] leading-[1.5] text-[var(--color-ink-60)]">
+            <p className="mt-1 text-[13px] leading-[1.5] text-[var(--fg-2)]">
               {selected.data_signature}
             </p>
 
             <div className="tag mt-4">chain</div>
             <ol className="mono mt-1 text-[11px]">
               {selected.chain.map((p, i) => (
-                <li key={p + i} className="flex gap-2 border-b border-[var(--color-rule)] py-1">
-                  <span className="text-[var(--color-ink-40)]">{i + 1}</span>
+                <li key={p + i} className="flex gap-2 border-b border-[var(--rule)] py-1">
+                  <span className="text-[var(--fg-3)]">{i + 1}</span>
                   {p}
                 </li>
               ))}
@@ -174,10 +179,10 @@ export function Ledger() {
   if (!bundle || !stats) return <Skeleton rows={4} label="reading the ledger" />;
 
   return (
-    <section id="ledger" className="relative z-10 pt-28">
+    <section id="ledger" className="relative z-10 pt-14 pb-16">
       <SectionMark index="02" title="Generate" note="single-source simulator" />
 
-      <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_1.4fr]">
+      <div className="mt-7 grid gap-8 lg:grid-cols-[1fr_1.4fr]">
         <div className="lg:sticky lg:top-24 lg:self-start">
           <h2 className="display text-[clamp(2.2rem,4.6vw,3.6rem)]">
             {attacker ? 'Volume is the cover.' : 'One in a hundred.'}
@@ -190,7 +195,12 @@ export function Ledger() {
               which program wrote each row.
             </span>
           </Body>
-          <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-4">
+          <Hero
+            value={pct(stats.prevalence, 2)}
+            caption="fraud base rate"
+            note="Stated beside every metric in this project, without exception."
+          />
+          <div className="mt-7 grid grid-cols-2 gap-x-8 gap-y-4">
             <Figure label="Rows in slice" value={stats.total.toLocaleString()} />
             <Figure label="Fraudulent" value={stats.nFraud.toLocaleString()} />
             <Figure label="Prevalence" value={pct(stats.prevalence, 2)} note="stated beside every metric" />
@@ -208,11 +218,11 @@ export function Ledger() {
                 y={130 - v * 110}
                 width={640 / stats.legit.length - 1.5}
                 height={Math.max(v * 110, 0.6)}
-                fill="var(--color-ink)"
+                fill="var(--fg)"
                 opacity={0.24}
               />
             ))}
-            <line x1={0} x2={640} y1={130} y2={130} stroke="var(--color-ink)" strokeWidth={1} />
+            <line x1={0} x2={640} y1={130} y2={130} stroke="var(--fg)" strokeWidth={1} />
             {stats.fraud.map((v, i) =>
               v > 0 ? (
                 <rect
@@ -225,10 +235,10 @@ export function Ledger() {
                 />
               ) : null
             )}
-            <text x={4} y={124} className="mono" fontSize={9} fill="var(--color-ink-40)">
+            <text x={4} y={122} className="mono" fontSize={11} fill="var(--fg-2)">
               LEGITIMATE
             </text>
-            <text x={4} y={144} className="mono" fontSize={9} fill="var(--spot)">
+            <text x={4} y={146} className="mono" fontSize={11} fill="var(--spot)">
               FRAUD, SCALED x8 TO BE VISIBLE AT ALL
             </text>
           </svg>
@@ -319,29 +329,26 @@ export function Nebula() {
   );
 
   return (
-    <section id="nebula" className="relative z-10 pt-28">
+    <section id="nebula" className="relative z-10 pt-14 pb-16">
       <SectionMark index="03" title="Graph" note="the level a row cannot represent" />
 
-      <div className="mt-10 grid gap-10 lg:grid-cols-[1.2fr_1fr]">
-        <div className="relative" ref={nebulaRef} style={{ minHeight: 460 }}>
-          {nebulaNear ? (
-            <Suspense
-              fallback={<div className="tag grid h-[460px] place-items-center">loading the graph</div>}
-            >
-              <AccountNebula3D
-                nodes={nodes3d}
-                edges={edges3d}
-                attacker={attacker}
-                reduced={reduced}
-              />
-            </Suspense>
-          ) : (
-            <SceneGate label="the graph" onLoad={loadNebula} />
-          )}
+      {/* Full bleed. The graph result is the payoff, so it gets the width of the page
+          rather than a column inside it. */}
+      <div className="mt-7 -mx-6 md:-mx-10" ref={nebulaRef} style={{ minHeight: 520 }}>
+        {nebulaNear ? (
+          <Suspense fallback={<div className="tag grid h-[520px] place-items-center">loading the graph</div>}>
+            <AccountNebula3D nodes={nodes3d} edges={edges3d} attacker={attacker} reduced={reduced} />
+          </Suspense>
+        ) : (
+          <SceneGate label="the graph" onLoad={loadNebula} />
+        )}
+      </div>
 
-          <div className="tag mt-6 mb-2">flat projection, the reduced-motion path</div>
+      <div className="mt-7 grid gap-8 lg:grid-cols-[1.2fr_1fr]">
+        <div className="relative">
+          <div className="tag mb-2">flat projection, the reduced-motion path</div>
           <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
-            <rect x={0.5} y={0.5} width={W - 1} height={H - 1} fill="none" stroke="var(--color-rule)" />
+            <rect x={0.5} y={0.5} width={W - 1} height={H - 1} fill="none" stroke="var(--rule)" />
             {graph.edges.map((e, i) => {
               const a = pos.get(e.source_account)!;
               const b = pos.get(e.target_account)!;
@@ -352,7 +359,7 @@ export function Nebula() {
                   y1={a.y}
                   x2={b.x}
                   y2={b.y}
-                  stroke="var(--color-ink)"
+                  stroke="var(--fg)"
                   strokeWidth={0.6}
                   opacity={0.3}
                 />
@@ -369,12 +376,12 @@ export function Nebula() {
                   </title>
                 </rect>
               ) : (
-                <circle key={n.id} cx={p.x} cy={p.y} r={s / 2} fill="none" stroke="var(--color-ink)" strokeWidth={1}>
+                <circle key={n.id} cx={p.x} cy={p.y} r={s / 2} fill="none" stroke="var(--fg)" strokeWidth={1}>
                   <title>{n.id}</title>
                 </circle>
               );
             })}
-            <text x={12} y={20} className="mono" fontSize={9} fill="var(--color-ink-40)">
+            <text x={12} y={22} className="mono" fontSize={11} fill="var(--fg-2)">
               INNER RING / PASS-THROUGH &gt; 0.80
             </text>
           </svg>
@@ -393,7 +400,12 @@ export function Nebula() {
             </span>
           </Body>
 
-          <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-4">
+          <Hero
+            value={String(graph.flagged)}
+            caption="pass-through accounts flagged"
+            note="Money in and money out within 15%. Accounts defined by what they never do, which is hold a balance."
+          />
+          <div className="mt-7 grid grid-cols-2 gap-x-8 gap-y-4">
             <Figure label="Accounts" value={graph.accounts.toLocaleString()} />
             <Figure label="Transfer edges" value={graph.transfers.toLocaleString()} />
             <Figure label="Pass-through flagged" value={String(graph.flagged)} note="in/out within 15%" />
@@ -410,8 +422,8 @@ export function Nebula() {
                 'community density',
                 'shared-device edges between unrelated accounts',
               ].map((f, i) => (
-                <li key={f} className="flex gap-3 border-b border-[var(--color-rule)] py-1 last:border-0">
-                  <span className="text-[var(--color-ink-40)]">{String(i + 1).padStart(2, '0')}</span>
+                <li key={f} className="flex gap-3 border-b border-[var(--rule)] py-1 last:border-0">
+                  <span className="text-[var(--fg-3)]">{String(i + 1).padStart(2, '0')}</span>
                   {f}
                 </li>
               ))}
@@ -462,10 +474,10 @@ export function Surface() {
   const baseline = bundle.manifest.baseline.metrics;
 
   return (
-    <section id="surface" className="relative z-10 pt-28">
+    <section id="surface" className="relative z-10 pt-14 pb-16">
       <SectionMark index="04" title="Defend" note="threshold as an economic choice" />
 
-      <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_1.3fr]">
+      <div className="mt-7 grid gap-8 lg:grid-cols-[1fr_1.3fr]">
         <div>
           <h2 className="display text-[clamp(2rem,4.2vw,3.2rem)]">
             {attacker ? 'The gap under the line.' : 'Where the money says to stand.'}
@@ -492,7 +504,12 @@ export function Surface() {
             <span className="mono w-14 text-right text-[13px]">{threshold.toFixed(3)}</span>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-4">
+          <Hero
+            value={formatInr(at.net).replace('INR ', '')}
+            caption="net value protected, rupees"
+            note="Fraud caught less the cost of reviewing false positives. Moving the threshold moves this number."
+          />
+          <div className="mt-7 grid grid-cols-2 gap-x-8 gap-y-4">
             <Figure label="Recall" value={pct(at.recall)} lift={lift(at.recall, baseline.recall)} />
             <Figure label="Precision" value={pct(at.precision)} lift={lift(at.precision, baseline.precision)} />
             <Figure label="Net value protected" value={formatInr(at.net)} />
@@ -520,7 +537,7 @@ export function Surface() {
           <Plate title="why this alert scored as it did" index="shap" className="mt-8">
             {shap ? (
               <>
-                <div className="mono mb-2 text-[10px] text-[var(--color-ink-40)]">
+                <div className="mono mb-2 text-[11px] text-[var(--fg-2)]">
                   {shap.instance_id} · {shap.vector_id} · score {shap.score.toFixed(3)}
                 </div>
                 <ContributionPlot rows={[...shap.top_shap].sort((a, b) => b.value - a.value).slice(0, 6)} />
@@ -586,8 +603,8 @@ function useNearViewport<T extends HTMLElement>(margin = 600) {
 /** Placeholder that also lets a viewer force the scene, so nothing depends on scrolling. */
 function SceneGate({ label, onLoad }: { label: string; onLoad: () => void }) {
   return (
-    <div className="grid h-[460px] place-items-center border border-[var(--color-rule)]">
-      <button onClick={onLoad} className="hit mono border border-[var(--color-ink)] px-3 py-1.5 text-[11px] uppercase tracking-[0.14em]">
+    <div className="grid h-[460px] place-items-center border border-[var(--rule)]">
+      <button onClick={onLoad} className="hit mono border border-[var(--fg)] px-3 py-1.5 text-[11px] uppercase tracking-[0.14em]">
         load {label}
       </button>
     </div>
@@ -623,10 +640,10 @@ export function Helix() {
   const perVector = [...(gMisses?.per_vector ?? [])].sort((a, b) => a.detection_rate - b.detection_rate);
 
   return (
-    <section id="helix" className="relative z-10 pt-28">
+    <section id="helix" className="relative z-10 pt-14 pb-16">
       <SectionMark index="05" title="The loop" note="the novelty claim" />
 
-      <div className="mt-10">
+      <div className="mt-7">
         <h2 className="display max-w-[18ch] text-[clamp(2.6rem,6vw,5rem)]">
           {attacker ? (
             <>
@@ -643,11 +660,11 @@ export function Helix() {
         </h2>
       </div>
 
-      <div className="mt-8" ref={helixRef} style={{ minHeight: 460 }}>
+      <div className="mt-7 -mx-6 md:-mx-10" ref={helixRef} style={{ minHeight: 520 }}>
         {helixNear ? (
           <Suspense
             fallback={
-              <div className="tag grid h-[460px] place-items-center">loading the helix</div>
+              <div className="tag grid h-[520px] place-items-center">loading the helix</div>
             }
           >
             <LoopHelix3D
@@ -663,7 +680,7 @@ export function Helix() {
         )}
       </div>
 
-      <div className="mt-10 grid gap-10 lg:grid-cols-[1.4fr_1fr]">
+      <div className="mt-7 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
         <div>
           <div className="tag mb-2">detection rate per generation, flat view</div>
           <LinePlot
@@ -687,8 +704,8 @@ export function Helix() {
                 onClick={() => setGeneration(g.generation)}
                 className="hit mono border px-2 py-1 text-[11px]"
                 style={{
-                  borderColor: g.generation === current.generation ? 'var(--spot)' : 'var(--color-ink-20)',
-                  color: g.generation === current.generation ? 'var(--spot)' : 'var(--color-ink-60)',
+                  borderColor: g.generation === current.generation ? 'var(--spot)' : 'var(--edge)',
+                  color: g.generation === current.generation ? 'var(--spot)' : 'var(--fg-2)',
                 }}
               >
                 G{g.generation}
@@ -697,6 +714,16 @@ export function Helix() {
           </div>
         </div>
 
+        <div className="self-start">
+          <Hero
+            value={pct(current.detection_rate ?? 0, 1)}
+            caption="instance recall"
+            note="An incident, not a row. A sweep of twenty probes counts once."
+          />
+        </div>
+      </div>
+
+      <div className="mt-8 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
         <div className="grid grid-cols-2 gap-x-8 gap-y-4 self-start">
           <Figure
             label="Recall, seen"
@@ -724,14 +751,14 @@ export function Helix() {
         </div>
       </div>
 
-      <div className="mt-12 grid gap-10 lg:grid-cols-2">
+      <div className="mt-8 grid gap-8 lg:grid-cols-2">
         <div>
           <div className="tag mb-3">per vector, weakest first</div>
-          <ul className="border-t border-[var(--color-ink)]">
+          <ul className="border-t border-[var(--fg)]">
             {perVector.map((v) => (
-              <li key={v.vector_id} className="flex items-center gap-3 border-b border-[var(--color-rule)] py-2">
+              <li key={v.vector_id} className="flex items-center gap-3 border-b border-[var(--rule)] py-2">
                 <span className="mono w-12 text-[11px]">{v.vector_id}</span>
-                <span className="relative h-[7px] flex-1 border border-[var(--color-ink-20)]">
+                <span className="relative h-[7px] flex-1 border border-[var(--edge)]">
                   <span
                     className="absolute inset-y-0 left-0"
                     style={{
@@ -753,7 +780,7 @@ export function Helix() {
             <Figure label="Chains proposed" value={String(current.n_chains_proposed ?? 0)} />
             <Figure label="Chains rejected" value={String(current.n_chains_rejected ?? 0)} />
           </div>
-          <p className="mt-4 text-[13px] leading-[1.5] text-[var(--color-ink-60)]">
+          <p className="mt-4 text-[13px] leading-[1.5] text-[var(--fg-2)]">
             Every chain the strategist returns is validated against the grammar, deduplicated
             against existing vector ids, and plausibility checked before the simulator touches
             it. The rejection rate is reported rather than hidden: a model that needs heavy
@@ -777,10 +804,10 @@ export function Mirror() {
   const auc = f.discriminator_auc;
 
   return (
-    <section id="mirror" className="relative z-10 pt-28">
+    <section id="mirror" className="relative z-10 pt-14 pb-16">
       <SectionMark index="06" title="Evidence" note="fidelity as a number" />
 
-      <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_1fr]">
+      <div className="mt-7 grid gap-8 lg:grid-cols-[1fr_1fr]">
         <div>
           <h2 className="display text-[clamp(2rem,4.2vw,3.2rem)]">
             {attacker ? 'Does the forgery survive inspection?' : 'Comparing histograms is not evidence.'}
@@ -794,10 +821,15 @@ export function Mirror() {
             </span>
           </Body>
 
-          <div className="mt-8">
+          <Hero
+            value={auc == null ? 'PENDING' : auc.toFixed(3)}
+            caption="discriminator AUC"
+            note="0.50 means a classifier cannot tell our rows from reference rows. Pending until a reference profile is on disk."
+          />
+          <div className="mt-7">
             <div className="tag mb-2">discriminator</div>
-            <div className="relative h-8 border border-[var(--color-ink)]">
-              <div className="absolute inset-y-0 left-1/2 w-px bg-[var(--color-ink)]" />
+            <div className="relative h-8 border border-[var(--fg)]">
+              <div className="absolute inset-y-0 left-1/2 w-px bg-[var(--fg)]" />
               {auc != null && (
                 <div
                   className="absolute inset-y-0"
@@ -805,7 +837,7 @@ export function Mirror() {
                 />
               )}
               {auc == null && (
-                <div className="mono flex h-full items-center justify-center text-[11px] text-[var(--color-ink-40)]">
+                <div className="mono flex h-full items-center justify-center text-[11px] text-[var(--fg-3)]">
                   PENDING / NO REFERENCE PROFILE ON DISK
                 </div>
               )}
@@ -832,7 +864,7 @@ export function Mirror() {
             <div className="mono mt-1 text-[11px]">{f.comparable_columns.join(', ')}</div>
             <Hatch h={8} className="my-3" />
             <div className="tag">excluded, no reference analogue</div>
-            <div className="mono mt-1 text-[11px] text-[var(--color-ink-40)]">
+            <div className="mono mt-1 text-[11px] text-[var(--fg-3)]">
               {f.excluded_columns.join(', ')}
             </div>
           </Plate>

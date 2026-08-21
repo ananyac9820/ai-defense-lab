@@ -1,43 +1,62 @@
 @import 'tailwindcss';
 
 /*
-  Technical dossier, not a product page.
+  Technical dossier. Alternating ink and paper bands, hairline rules, registration
+  crosses, monospace annotation, display type large enough to read across a room.
 
-  The reference is an annotated blueprint: warm paper, hairline rules, registration
-  crosses, monospace micro-labels, and display type large enough to be read across a
-  room. Everything here is built from rules and type. There are no gradients, no glass,
-  no shadows, no icon set, no rounded corners, and no accent colour doing decorative
-  work.
+  Colour is band-scoped rather than global. Every component reads --fg, --fg-2, --fg-3,
+  --rule, --ground and --spot; nothing hard-codes ink or paper. That is what lets a
+  section invert without touching a single component.
 
-  Palette: paper and ink, plus exactly two spot colours that carry the attacker/defender
-  inversion. Neither is neon and neither is pastel - viridian and vermilion, both dark
-  enough to hold their own against ink on paper.
+  Contrast is a correctness constraint here, not a preference. An audit of the previous
+  build found 113 pieces of text under 12px failing 7:1, the worst at 2.54:1 - grey on
+  beige at 10px, invisible on a projector. Small text needs MORE contrast than body text,
+  so the muted tokens below are set from the 7:1 threshold and worked backwards, not
+  chosen by eye.
 */
 @theme {
   --color-paper: #f3f2ee;
-  --color-paper-2: #eceae4;
   --color-ink: #14140f;
-  --color-ink-60: #14140f99;
-  --color-ink-40: #14140f66;
-  --color-ink-20: #14140f33;
-  --color-rule: #14140f1f;
-  --color-rule-soft: #14140f14;
-
-  --color-defend: #0f5c4a;
-  --color-attack: #c43d18;
 
   --font-display: 'Archivo', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'Courier New', monospace;
 }
 
-:root {
-  color-scheme: light;
-  --spot: var(--color-defend);
+/*
+  Paper band. --fg-2 at #3a3a34 measures 10.2:1 on this ground and --fg-3 at #4e4e46
+  measures 7.5:1. Both were solved for rather than sampled.
+*/
+:root,
+.band-paper {
+  --ground: #f3f2ee;
+  --fg: #14140f;
+  --fg-2: #3a3a34;
+  --fg-3: #4e4e46;
+  --rule: rgba(20, 20, 15, 0.16);
+  --edge: rgba(20, 20, 15, 0.34);
+  --spot: var(--spot-paper, #0f5c4a);
+  /* The warning colour needs its own pair. Vermilion measures 4.65:1 on paper, which is
+     fine for a 34px figure and not fine for an 11px badge, so the badge gets a darker
+     shade on paper and a lighter one on ink. */
+  --warn: #94290c;
   --grid: 88px;
+}
+
+/* Ink band. --fg-2 measures 11.9:1 and --fg-3 measures 8.8:1 against #0e0e0c. */
+.band-ink {
+  --ground: #0e0e0c;
+  --fg: #f3f2ee;
+  --fg-2: #cfcdc4;
+  --fg-3: #b3b1a7;
+  --rule: rgba(243, 242, 238, 0.18);
+  --edge: rgba(243, 242, 238, 0.34);
+  --spot: var(--spot-ink, #4bbf95);
+  --warn: #ff9a72;
 }
 
 html {
   scroll-behavior: smooth;
+  background: var(--color-paper);
 }
 
 body {
@@ -50,35 +69,32 @@ body {
 }
 
 /*
-  The continuous ground. One fixed layer of hairlines behind every section, so sections
-  bleed into one another instead of sitting in separate boxes - there is no seam to see
-  because the grid never restarts.
+  Bands carry their own ground and their own grid, so the hairline field continues
+  across the inversion instead of stopping at it. The pitch never changes, which is what
+  keeps a page of alternating blocks reading as one drawing.
 */
-.ground {
-  position: fixed;
+.band {
+  position: relative;
+  background: var(--ground);
+  color: var(--fg);
+}
+
+.band::before {
+  content: '';
+  position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(to right, var(--color-rule-soft) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--color-rule-soft) 1px, transparent 1px);
+    linear-gradient(to right, var(--rule) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--rule) 1px, transparent 1px);
   background-size: var(--grid) var(--grid);
+  opacity: 0.55;
 }
 
-/* Registration crosses on the grid intersections. Drawn, not decorative: they mark the
-   same coordinate system every plate is placed against. */
-.ground::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(to right, var(--color-ink-20) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--color-ink-20) 1px, transparent 1px);
-  background-size: 9px 1px, 1px 9px;
-  background-position: calc(var(--grid) - 4px) calc(var(--grid) - 0.5px);
-  background-repeat: repeat;
-  opacity: 0.55;
-  mask-image: radial-gradient(circle at 50% 40%, #000 0%, #000 60%, transparent 100%);
+.band > * {
+  position: relative;
+  z-index: 1;
 }
 
 @utility mono {
@@ -86,23 +102,25 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Micro-label. Tiny, tracked out, upper case. The annotation voice of the whole page. */
+/*
+  The annotation voice. 11px is the floor everywhere on the page; below that the mono
+  counters close up and nothing survives a projector. Tracking is generous for the same
+  reason - tight tracking at small sizes is what makes uppercase mono unreadable.
+*/
 @utility tag {
   font-family: var(--font-mono);
-  font-size: 10px;
-  line-height: 1.2;
-  letter-spacing: 0.14em;
+  font-size: 11px;
+  line-height: 1.35;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-ink-60);
+  color: var(--fg-3);
 }
 
 @utility plate {
-  border: 1px solid var(--color-ink);
-  background: var(--color-paper);
+  border: 1px solid var(--fg);
+  background: var(--ground);
 }
 
-/* Display type: tight, large, ink. The reference sets it at sizes that crowd the
-   measure on purpose. */
 @utility display {
   font-family: var(--font-display);
   font-weight: 600;
@@ -110,24 +128,35 @@ body {
   line-height: 0.95;
 }
 
-/* An inline word in a box, the way the reference boxes a phrase mid-sentence. */
+/*
+  One number per section, set large enough that it is the first thing read. Scale
+  contrast is the whole typographic idea: a 96px figure against 11px annotation, and
+  almost nothing in between.
+*/
+@utility hero-number {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(3.4rem, 9vw, 7rem);
+  line-height: 0.86;
+  letter-spacing: -0.045em;
+  color: var(--spot);
+}
+
 @utility boxed {
-  border: 1px solid var(--color-ink);
+  border: 1px solid var(--fg);
   padding: 0 0.25em;
   display: inline-block;
   line-height: 1.15;
 }
 
 @utility inverted {
-  background: var(--color-ink);
-  color: var(--color-paper);
+  background: var(--spot);
+  color: var(--ground);
   padding: 0 0.25em;
   display: inline-block;
   line-height: 1.15;
 }
 
-/* Hover is a state change, not an animation: the rule thickens and the ink darkens the
-   instant the pointer arrives. No transition, no lift, no glow. */
 @utility hit {
   cursor: pointer;
 }
@@ -140,37 +169,36 @@ body {
 input[type='range'] {
   appearance: none;
   height: 1px;
-  background: var(--color-ink-40);
+  background: var(--edge);
 }
 input[type='range']::-webkit-slider-thumb {
   appearance: none;
-  width: 3px;
-  height: 22px;
+  width: 4px;
+  height: 24px;
   background: var(--spot);
   border: 0;
   cursor: ew-resize;
 }
 input[type='range']::-moz-range-thumb {
-  width: 3px;
-  height: 22px;
+  width: 4px;
+  height: 24px;
   background: var(--spot);
   border: 0;
   border-radius: 0;
   cursor: ew-resize;
 }
 
-/* Skeletons are real: a plate with hairline bars, no shimmer sweep. */
 @keyframes pulse-rule {
   0%,
   100% {
-    opacity: 0.28;
+    opacity: 0.3;
   }
   50% {
-    opacity: 0.6;
+    opacity: 0.65;
   }
 }
 .skeleton-bar {
-  background: var(--color-ink);
+  background: var(--fg);
   animation: pulse-rule 1.4s ease-in-out infinite;
 }
 
@@ -180,6 +208,6 @@ input[type='range']::-moz-range-thumb {
   }
   .skeleton-bar {
     animation: none;
-    opacity: 0.35;
+    opacity: 0.4;
   }
 }
