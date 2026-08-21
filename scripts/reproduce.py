@@ -28,6 +28,7 @@ STAGES: list[tuple[str, list[str] | None]] = [
     ("run the adversarial loop", None),  # Phase 4
     ("publish artefacts for the prototype", None),  # Phase 5
     ("build the walkthrough document", [sys.executable, "scripts/build_walkthrough.py"]),
+    ("audit artefact freshness and provenance", [sys.executable, "scripts/audit_artefacts.py"]),
 ]
 
 
