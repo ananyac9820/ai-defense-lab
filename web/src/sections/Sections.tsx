@@ -248,6 +248,8 @@ export function Ledger() {
 export function Nebula() {
   const { bundle, perspective } = useStore();
   const attacker = perspective === 'attacker';
+  const reduced = usePrefersReducedMotion();
+  const [nebulaRef, nebulaNear] = useNearViewport<HTMLDivElement>();
 
   const graph = useMemo(() => {
     if (!bundle) return null;
@@ -272,12 +274,12 @@ export function Nebula() {
     const scored = [...nodes.values()].map((n) => {
       const total = n.in + n.out;
       const passthrough = total > 0 && n.in > 0 && n.out > 0 ? 1 - Math.abs(n.in - n.out) / total : 0;
-      return { ...n, passthrough, degree: n.di + n.do };
+      return { ...n, passthrough, degree: n.di + n.do, isMule: mules.has(n.id) };
     });
     const ranked = scored
       .filter((n) => n.degree >= 2)
       .sort((a, b) => b.passthrough * b.degree - a.passthrough * a.degree)
-      .slice(0, 40);
+      .slice(0, 260);
     const keep = new Set(ranked.map((n) => n.id));
     return {
       nodes: ranked,
@@ -290,6 +292,21 @@ export function Nebula() {
   }, [bundle]);
 
   if (!bundle || !graph) return <Skeleton rows={4} label="building the account graph" />;
+
+  // Node and edge lists for the 3D layout, indexed rather than keyed by id so the force
+  // simulation can work on flat arrays.
+  const index = new Map(graph.nodes.map((n, i) => [n.id, i]));
+  const nodes3d = graph.nodes.map((n) => ({
+    id: n.id,
+    passthrough: n.passthrough,
+    degree: n.degree,
+    isMule: n.isMule,
+  }));
+  const edges3d = graph.edges
+    .map((e) => ({ source: index.get(e.source_account), target: index.get(e.target_account) }))
+    .filter((e): e is { source: number; target: number } =>
+      e.source !== undefined && e.target !== undefined && e.source !== e.target
+    );
 
   const W = 620;
   const H = 420;
@@ -306,7 +323,23 @@ export function Nebula() {
       <SectionMark index="03" title="Graph" note="the level a row cannot represent" />
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[1.2fr_1fr]">
-        <div className="relative">
+        <div className="relative" ref={nebulaRef} style={{ minHeight: 460 }}>
+          {nebulaNear ? (
+            <Suspense
+              fallback={<div className="tag grid h-[460px] place-items-center">loading the graph</div>}
+            >
+              <AccountNebula3D
+                nodes={nodes3d}
+                edges={edges3d}
+                attacker={attacker}
+                reduced={reduced}
+              />
+            </Suspense>
+          ) : (
+            <div className="tag grid h-[460px] place-items-center">graph loads on approach</div>
+          )}
+
+          <div className="tag mt-6 mb-2">flat projection, the reduced-motion path</div>
           <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
             <rect x={0.5} y={0.5} width={W - 1} height={H - 1} fill="none" stroke="var(--color-rule)" />
             {graph.edges.map((e, i) => {
@@ -512,6 +545,7 @@ export function Surface() {
  * the venue fallback, and it is why the 2D path was built first.
  */
 const LoopHelix3D = lazy(() => import('../three/LoopHelix3D'));
+const AccountNebula3D = lazy(() => import('../three/AccountNebula3D'));
 
 /**
  * Mount the 3D scene only once its section is near the viewport.
