@@ -311,8 +311,21 @@ def build() -> Path:
             table(doc, ["ID", "Vector", "Holdout", "Novel primitives", "Detected", "Rate"], rows)
             caption(
                 doc,
-                "The only vector the detector misses is the one whose extraction moves off "
-                "the peer-to-peer transfer rail.",
+                "Novel acquisition and pure recomposition are detected in full. Both "
+                "vectors introducing an unseen extraction rail degrade.",
+            )
+            doc.add_paragraph(
+                "How stable is this? On the previous ledger V007 read 100% and only V006 "
+                "degraded; on this one V007 reads 71.4%. Single-ledger held-out results at "
+                "these instance counts carry real variance, and quoting only the run that "
+                "suits the argument would be the easiest way to mislead here."
+            )
+            doc.add_paragraph(
+                "The claim therefore rests on the pattern across four holdout types rather "
+                "than on any single vector's rate. Across both ledgers, every vector "
+                "introducing a novel extraction rail degraded and no vector withholding "
+                "only acquisition, establishment or ordering ever did. The direction is "
+                "stable; the magnitudes are not, and are reported as measured."
             )
 
         doc.add_heading("5.2 What each level of evidence contributes", level=2)

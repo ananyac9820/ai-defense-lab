@@ -33,6 +33,8 @@ export interface NebulaEdge {
 }
 
 interface Props {
+  /** 0 to 1 across the section, from the scroll driver. */
+  progress?: () => number;
   nodes: NebulaNode[];
   edges: NebulaEdge[];
   attacker: boolean;
@@ -121,11 +123,12 @@ function layout(nodes: NebulaNode[], edges: NebulaEdge[]): Float32Array {
   return pos;
 }
 
-function Graph({ nodes, edges, attacker, reduced }: Props) {
+function Graph({ nodes, edges, attacker, reduced, progress }: Props) {
   const group = useRef<THREE.Group>(null);
   const flagged = useRef<THREE.InstancedMesh>(null);
   const ordinary = useRef<THREE.InstancedMesh>(null);
-  const { invalidate } = useThree();
+  const lines = useRef<THREE.LineSegments>(null);
+  const { invalidate, camera } = useThree();
 
   const positions = useMemo(() => layout(nodes, edges), [nodes, edges]);
   // Explicit hex for the same reason as the helix: WebGL materials cannot read CSS vars.
@@ -177,14 +180,36 @@ function Graph({ nodes, edges, attacker, reduced }: Props) {
   }, [hot, cool, positions, invalidate]);
 
   useFrame((_, delta) => {
-    if (reduced || !group.current) return;
-    group.current.rotation.y += delta * 0.06;
+    if (reduced) {
+      if (lines.current) lines.current.geometry.setDrawRange(0, Infinity);
+      if (flagged.current) flagged.current.count = hot.length;
+      return;
+    }
+    const p = progress ? progress() : 1;
+
+    // Edges draw in sequence, then nodes settle, then the pass-through accounts fill
+    // last - the order the eye should read them in.
+    if (lines.current) {
+      lines.current.geometry.setDrawRange(0, Math.ceil(edges.length * 2 * Math.min(1, p * 1.3)));
+    }
+    if (flagged.current) {
+      const reveal = Math.max(0, p * 1.6 - 0.6);
+      flagged.current.count = Math.min(hot.length, Math.ceil(hot.length * reveal));
+    }
+
+    if (group.current) {
+      // Slow orbit, plus a camera that rises as the section scrolls, so the graph is
+      // something the viewer moves through rather than a picture of a graph.
+      group.current.rotation.y += delta * 0.05;
+      camera.position.y = 3.4 - p * 2.2;
+      camera.lookAt(0, 0, 0);
+    }
     invalidate();
   });
 
   return (
     <group ref={group}>
-      <lineSegments>
+      <lineSegments ref={lines}>
         <primitive object={edgeGeometry} attach="geometry" />
         <lineBasicMaterial attach="material" color={ink} opacity={0.22} transparent />
       </lineSegments>
@@ -202,7 +227,7 @@ function Graph({ nodes, edges, attacker, reduced }: Props) {
   );
 }
 
-export default function AccountNebula3D({ nodes, edges, attacker, reduced }: Props) {
+export default function AccountNebula3D({ nodes, edges, attacker, reduced, progress }: Props) {
   if (!nodes.length) return null;
   const flagged = nodes.filter((n) => n.passthrough > 0.85).length;
   return (
@@ -214,7 +239,7 @@ export default function AccountNebula3D({ nodes, edges, attacker, reduced }: Pro
         gl={{ antialias: true, alpha: true }}
         style={{ background: 'transparent' }}
       >
-        <Graph nodes={nodes} edges={edges} attacker={attacker} reduced={reduced} />
+        <Graph nodes={nodes} edges={edges} attacker={attacker} reduced={reduced} progress={progress} />
       </Canvas>
       <div className="tag pointer-events-none absolute bottom-0 left-0">
         {nodes.length} accounts · {edges.length} transfers · {flagged} pass-through, filled

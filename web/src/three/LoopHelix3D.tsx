@@ -17,6 +17,8 @@ import type { Generation, MissesFile } from '../lib/contracts';
  */
 
 interface HelixProps {
+  /** 0 to 1 across the section, from the scroll driver. */
+  progress?: () => number;
   generations: Generation[];
   misses: MissesFile[];
   selected: number;
@@ -54,9 +56,11 @@ function seriesOf(gen: Generation, key: 'fixed' | 'fresh'): number | null {
   return gen.detection_rate_new_vectors ?? null;
 }
 
-function Helix({ generations, misses, selected, attacker, reduced }: HelixProps) {
+function Helix({ generations, misses, selected, attacker, reduced, progress }: HelixProps) {
   const group = useRef<THREE.Group>(null);
-  const { invalidate } = useThree();
+  const drawn = useRef<THREE.Line>(null);
+  const drawnFresh = useRef<THREE.Line>(null);
+  const { invalidate, camera } = useThree();
 
   const { curve, freshCurve, rings, fragments, ticks } = useMemo(() => {
     const points: THREE.Vector3[] = [];
@@ -131,9 +135,57 @@ function Helix({ generations, misses, selected, attacker, reduced }: HelixProps)
     };
   }, [generations, misses]);
 
+  const { axisLine, curveLine, freshLine } = useMemo(() => {
+    const inkColour = attacker ? '#c43d18' : '#14140f';
+    const spotColour = attacker ? '#c43d18' : '#0f5c4a';
+    const axis = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0.4, 0),
+        new THREE.Vector3(0, -generations.length * TURN_HEIGHT - 0.2, 0),
+      ]),
+      new THREE.LineBasicMaterial({ color: '#14140f', opacity: 0.28, transparent: true })
+    );
+    const main = new THREE.Line(
+      curve,
+      new THREE.LineBasicMaterial({ color: '#14140f', opacity: 0.85, transparent: true })
+    );
+    const fresh = freshCurve
+      ? new THREE.Line(
+          freshCurve,
+          new THREE.LineBasicMaterial({ color: spotColour, opacity: 0.9, transparent: true })
+        )
+      : null;
+    void inkColour;
+    return { axisLine: axis, curveLine: main, freshLine: fresh };
+  }, [curve, freshCurve, generations.length, attacker]);
+
   useFrame((_, delta) => {
-    if (reduced || !group.current) return;
-    group.current.rotation.y += delta * 0.08;
+    if (reduced) {
+      // Reduced motion: the whole spiral is present, nothing moves, nothing is hidden.
+      if (drawn.current) drawn.current.geometry.setDrawRange(0, Infinity);
+      if (drawnFresh.current) drawnFresh.current.geometry.setDrawRange(0, Infinity);
+      return;
+    }
+    const p = progress ? progress() : 1;
+
+    // The spiral draws turn by turn as the section scrolls: G0 through G4, each turn
+    // completing before the next begins. setDrawRange is free - no geometry is rebuilt.
+    const total = (generations.length * (TURN_SEGMENTS + 1));
+    if (drawn.current) drawn.current.geometry.setDrawRange(0, Math.ceil(total * p));
+    if (drawnFresh.current) {
+      const freshTotal = drawnFresh.current.geometry.getAttribute('position').count;
+      drawnFresh.current.geometry.setDrawRange(0, Math.ceil(freshTotal * p));
+    }
+
+    if (group.current) {
+      // Descent along the axis. The camera travels down the helix as the section
+      // scrolls, so it reads as moving through the figure rather than watching it turn.
+      group.current.rotation.y += delta * 0.05;
+      group.current.position.y =
+        (generations.length - 1) * TURN_HEIGHT * 0.5 + p * generations.length * TURN_HEIGHT * 0.55;
+      camera.position.y = 1.6 - p * 1.1;
+      camera.lookAt(0, group.current.position.y - generations.length * TURN_HEIGHT * 0.5, 0);
+    }
     invalidate();
   });
 
@@ -146,31 +198,14 @@ function Helix({ generations, misses, selected, attacker, reduced }: HelixProps)
   return (
     <group ref={group} position={[0, (generations.length - 1) * TURN_HEIGHT * 0.5, 0]}>
       {/* the axis the spiral converges towards */}
-      <line>
-        <bufferGeometry
-          attach="geometry"
-          {...new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(0, 0.4, 0),
-            new THREE.Vector3(0, -generations.length * TURN_HEIGHT - 0.2, 0),
-          ])}
-        />
-        <lineBasicMaterial attach="material" color={ink} opacity={0.28} transparent />
-      </line>
+      <primitive object={axisLine} />
 
       {/* the helix itself */}
-      <line>
-        <primitive object={curve} attach="geometry" />
-        <lineBasicMaterial attach="material" color={ink} opacity={0.85} transparent />
-      </line>
+      <primitive object={curveLine} ref={drawn} />
 
       {/* new-vectors-only series, drawn in the spot colour so the gap between the two
           spirals is the first thing visible */}
-      {freshCurve && (
-        <line>
-          <primitive object={freshCurve} attach="geometry" />
-          <lineBasicMaterial attach="material" color={spot} opacity={0.9} transparent />
-        </line>
-      )}
+      {freshLine && <primitive object={freshLine} ref={drawnFresh} />}
 
       {/* one reference circle per generation, in the plane of that turn */}
       {rings.map((ring) => {
@@ -181,15 +216,19 @@ function Helix({ generations, misses, selected, attacker, reduced }: HelixProps)
           pts.push(new THREE.Vector3(Math.cos(a) * ring.radius, ring.y, Math.sin(a) * ring.radius));
         }
         return (
-          <line key={`ring-${ring.generation}`}>
-            <primitive object={new THREE.BufferGeometry().setFromPoints(pts)} attach="geometry" />
-            <lineBasicMaterial
-              attach="material"
-              color={isSelected ? spot : ink}
-              opacity={isSelected ? 0.95 : 0.16}
-              transparent
-            />
-          </line>
+          <primitive
+            key={`ring-${ring.generation}`}
+            object={
+              new THREE.LineLoop(
+                new THREE.BufferGeometry().setFromPoints(pts),
+                new THREE.LineBasicMaterial({
+                  color: isSelected ? spot : ink,
+                  opacity: isSelected ? 0.95 : 0.16,
+                  transparent: true,
+                })
+              )
+            }
+          />
         );
       })}
 
@@ -226,6 +265,7 @@ export default function LoopHelix3D({
   selected,
   attacker,
   reduced,
+  progress,
 }: HelixProps) {
   if (!generations.length) return null;
   return (
@@ -243,6 +283,7 @@ export default function LoopHelix3D({
           selected={selected}
           attacker={attacker}
           reduced={reduced}
+          progress={progress}
         />
       </Canvas>
       <div className="tag pointer-events-none absolute bottom-0 left-0">

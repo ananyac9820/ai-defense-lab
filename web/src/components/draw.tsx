@@ -1,5 +1,11 @@
+import { useTrack } from '../lib/useMotion';
+
 /**
  * Plots drawn as hairline technical figures.
+ *
+ * Every stroke carries pathLength="1" and the `draw` class, so the dash offset is a
+ * unit-free function of the figure's own scroll progress. Nothing measures a path in
+ * JavaScript and nothing animates on a timer: scrub back up and the lines retract.
  *
  * Deliberately hand-built SVG rather than a chart library: the reference draws its
  * figures with rules, ticks and monospace labels, and a charting default style would
@@ -28,6 +34,7 @@ export function LinePlot({
   yMax?: number;
   format?: (v: number) => string;
 }) {
+  const ref = useTrack<SVGSVGElement>();
   const w = 640;
   const innerW = w - PAD.left - PAD.right;
   const innerH = height - PAD.top - PAD.bottom;
@@ -36,10 +43,12 @@ export function LinePlot({
   const y = (v: number) => PAD.top + innerH - (v / yMax) * innerH;
 
   return (
-    <svg viewBox={`0 0 ${w} ${height}`} className="w-full" role="img">
+    <svg ref={ref} viewBox={`0 0 ${w} ${height}`} className="w-full" role="img">
       {[0, 0.25, 0.5, 0.75, 1].map((t) => (
         <g key={t}>
           <line
+            className="draw"
+            pathLength={1}
             x1={PAD.left}
             x2={w - PAD.right}
             y1={y(t * yMax)}
@@ -65,7 +74,7 @@ export function LinePlot({
           x={x(i)}
           y={height - 6}
           textAnchor="middle"
-          className="mono"
+          className="mono fade-in"
           fontSize={11}
           fill="var(--fg-2)"
         >
@@ -75,6 +84,8 @@ export function LinePlot({
       {series.map((s) => (
         <g key={s.label}>
           <polyline
+            className="draw"
+            pathLength={1}
             fill="none"
             stroke={s.spot ? 'var(--spot)' : 'var(--fg)'}
             strokeWidth={s.spot ? 1.6 : 1}
@@ -87,7 +98,7 @@ export function LinePlot({
           {s.spot &&
             s.values.map((v, i) =>
               Number.isFinite(v) ? (
-                <rect key={i} x={x(i) - 2.5} y={y(v) - 2.5} width={5} height={5} fill="var(--spot)" />
+                <rect className="fade-in" key={i} x={x(i) - 2.5} y={y(v) - 2.5} width={5} height={5} fill="var(--spot)" />
               ) : null
             )}
         </g>
@@ -107,6 +118,7 @@ export function BarPlot({
   height?: number;
   format?: (v: number) => string;
 }) {
+  const ref = useTrack<SVGSVGElement>();
   const w = 640;
   const innerW = w - PAD.left - PAD.right;
   const innerH = height - PAD.top - PAD.bottom;
@@ -114,8 +126,10 @@ export function BarPlot({
   const bw = innerW / values.length;
 
   return (
-    <svg viewBox={`0 0 ${w} ${height}`} className="w-full" role="img">
+    <svg ref={ref} viewBox={`0 0 ${w} ${height}`} className="w-full" role="img">
       <line
+        className="draw"
+        pathLength={1}
         x1={PAD.left}
         x2={w - PAD.right}
         y1={PAD.top + innerH}
@@ -128,6 +142,7 @@ export function BarPlot({
         return (
           <g key={labels[i] + i}>
             <rect
+              style={{ transformOrigin: `0 ${PAD.top + innerH}px`, transform: 'scaleY(var(--p, 1))' }}
               x={PAD.left + i * bw + bw * 0.22}
               y={PAD.top + innerH - h}
               width={bw * 0.56}
@@ -169,20 +184,25 @@ export function ContributionPlot({
   rows: { feature: string; value: number }[];
   height?: number;
 }) {
+  const ref = useTrack<SVGSVGElement>();
   const w = 640;
   const mid = 300;
   const max = Math.max(...rows.map((r) => Math.abs(r.value)), 1e-9);
   const rh = rows.length ? (height - 8) / rows.length : 0;
 
   return (
-    <svg viewBox={`0 0 ${w} ${height}`} className="w-full" role="img">
-      <line x1={mid} x2={mid} y1={0} y2={height} stroke="var(--fg)" strokeWidth={1} />
+    <svg ref={ref} viewBox={`0 0 ${w} ${height}`} className="w-full" role="img">
+      <line className="draw" pathLength={1} x1={mid} x2={mid} y1={0} y2={height} stroke="var(--fg)" strokeWidth={1} />
       {rows.map((r, i) => {
         const len = (Math.abs(r.value) / max) * 250;
         const negative = r.value < 0;
         return (
           <g key={r.feature}>
             <rect
+              style={{
+                transformOrigin: `${mid}px 0`,
+                transform: `scaleX(clamp(0, calc(var(--p, 1) * 2 - ${(i * 0.12).toFixed(2)}), 1))`,
+              }}
               x={negative ? mid - len : mid}
               y={i * rh + rh * 0.28}
               width={len}
