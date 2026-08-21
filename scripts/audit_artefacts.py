@@ -18,8 +18,10 @@ miss the fifth, so this is a script and it fails loudly.
 
 It asserts three things:
 
-  FRESHNESS   every artefact is newer than every source file that can change it, and the
-              walkthrough is newer than every artefact it reads.
+  FRESHNESS   every artefact records the digest of the source that produced it, and that
+              digest matches the code in the repository now. Modification times cannot
+              answer this - git does not preserve them, so on a fresh clone every file
+              carries the same timestamp. The clean-clone test caught that.
   PROVENANCE  the run manifest's config hash matches the current config, its seed matches
               the configured seed, and dependent artefacts carry the same run_id.
   COHERENCE   the artefacts agree with each other and with the attack set: prevalences
@@ -29,41 +31,14 @@ It asserts three things:
 from __future__ import annotations
 
 import json
-import sys
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
-from adl.common.config import config_hash, load_config
-from adl.common.paths import ARTIFACTS_DIR, FIXTURES_DIR, REPO_ROOT
+from adl.common.config import config_hash, load_config, source_digest
+from adl.common.paths import ARTIFACTS_DIR, FIXTURES_DIR
 
 PUBLISHED = ARTIFACTS_DIR / "published"
 WALKTHROUGH = ARTIFACTS_DIR / "AI_Defense_Lab_Walkthrough.docx"
-
-# Which sources can change which artefact. Editing anything on the right invalidates the
-# file on the left, and an artefact older than its producer is stale by definition.
-PRODUCERS: dict[str, list[str]] = {
-    "run_manifest.json": [
-        "src/adl/generate/simulator.py", "src/adl/generate/primitives.py",
-        "src/adl/defend/features.py", "src/adl/defend/graph_features.py",
-        "src/adl/defend/models.py", "src/adl/evaluate/metrics.py",
-        "src/adl/evaluate/splits.py", "scripts/run_pipeline.py", "config.yaml",
-    ],
-    "misses.g0.json": [
-        "src/adl/generate/simulator.py", "src/adl/generate/primitives.py",
-        "src/adl/defend/models.py", "scripts/run_pipeline.py", "config.yaml",
-    ],
-    "demo_slice.json": [
-        "src/adl/generate/simulator.py", "src/adl/generate/primitives.py",
-        "scripts/run_pipeline.py", "config.yaml",
-    ],
-    "run_manifest_loop.json": [
-        "src/adl/generate/simulator.py", "src/adl/generate/primitives.py",
-        "src/adl/loop/strategist.py", "src/adl/loop/validation.py",
-        "src/adl/evaluate/protocol.py", "scripts/run_loop.py", "config.yaml",
-    ],
-}
-
 
 @dataclass
 class Finding:
@@ -72,39 +47,64 @@ class Finding:
     detail: str
 
 
-def mtime(path: Path) -> float:
-    return path.stat().st_mtime if path.exists() else 0.0
-
-
 def freshness(findings: list[Finding]) -> None:
-    for artefact, sources in PRODUCERS.items():
+    """Were these artefacts produced by the code currently in the repository?
+
+    Originally this compared modification times, and the clean-clone test proved that
+    wrong on the machine it matters most on: git does not preserve mtimes, so every file
+    in a fresh clone carries the same timestamp and any ordering between them is an
+    accident. The check reported four failures on a clone where nothing was actually
+    stale, and would have reported none on a clone where everything was.
+
+    Content digests answer the question properly and identically everywhere.
+    """
+    current = source_digest()
+
+    for artefact in ("run_manifest.json", "run_manifest_loop.json"):
         path = PUBLISHED / artefact
         if not path.exists():
             findings.append(Finding("WARN", "freshness", f"{artefact} not present"))
             continue
-        stale_against = [
-            s for s in sources
-            if (REPO_ROOT / s).exists() and mtime(REPO_ROOT / s) > mtime(path)
-        ]
-        if stale_against:
+        recorded = json.loads(path.read_text(encoding="utf-8")).get("source_digest")
+        if recorded is None:
+            findings.append(Finding(
+                "WARN", "freshness",
+                f"{artefact} predates source-digest recording, so its provenance cannot "
+                f"be verified. Regenerate it.",
+            ))
+        elif recorded != current:
             findings.append(Finding(
                 "FAIL", "freshness",
-                f"{artefact} is older than {', '.join(stale_against)}. It describes code "
-                f"that has since changed; regenerate before quoting any figure from it.",
+                f"{artefact} was produced by different code: records "
+                f"{recorded[:12]}, current source digest is {current[:12]}. Regenerate "
+                f"before quoting any figure from it.",
             ))
 
-    if WALKTHROUGH.exists():
-        newer = [
-            p.name for p in PUBLISHED.glob("*.json") if mtime(p) > mtime(WALKTHROUGH)
-        ]
-        if newer:
+    # The walkthrough records what it was built from, so the same question can be asked
+    # of it without relying on file times either.
+    stamp = ARTIFACTS_DIR / "walkthrough_build.json"
+    if not WALKTHROUGH.exists():
+        findings.append(Finding("WARN", "freshness", "walkthrough .docx not built"))
+    elif not stamp.exists():
+        findings.append(Finding("WARN", "freshness", "walkthrough build stamp missing"))
+    else:
+        built = json.loads(stamp.read_text(encoding="utf-8"))
+        if built.get("source_digest") != current:
             findings.append(Finding(
                 "FAIL", "freshness",
-                f"the walkthrough is older than {', '.join(sorted(newer))}. Its figures "
-                f"predate the artefacts they claim to be read from.",
+                f"the walkthrough was built from source digest "
+                f"{str(built.get('source_digest'))[:12]}, current is {current[:12]}. Its "
+                f"figures describe code that has since changed.",
             ))
-    else:
-        findings.append(Finding("WARN", "freshness", "walkthrough .docx not built"))
+        manifest_path = PUBLISHED / "run_manifest.json"
+        if manifest_path.exists():
+            live = json.loads(manifest_path.read_text(encoding="utf-8"))
+            if built.get("run_id") != live.get("run_id"):
+                findings.append(Finding(
+                    "FAIL", "freshness",
+                    f"the walkthrough was built from run {built.get('run_id')} but the "
+                    f"published manifest is {live.get('run_id')}.",
+                ))
 
 
 def provenance(findings: list[Finding]) -> dict[str, Any] | None:

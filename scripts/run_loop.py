@@ -27,7 +27,7 @@ import json
 from datetime import datetime, timezone
 from typing import Any
 
-from adl.common.config import config_hash, load_config
+from adl.common.config import config_hash, load_config, source_digest
 from adl.common.contracts import validate
 from adl.common.paths import ARTIFACTS_DIR, FIXTURES_DIR
 from adl.common.seeds import rng_for
@@ -198,14 +198,25 @@ def main(argv: list[str] | None = None) -> int:
     measured = [f for f in fresh_curve if f is not None]
     if measured:
         later = fixed_curve[1:] or fixed_curve
-        gap = sum(measured) / len(measured) - sum(later) / len(later)
-        print(f"  New vectors are caught {gap:+.1%} relative to the fixed set on average.")
-        if gap < -0.05:
+        mean_fresh = sum(measured) / len(measured)
+        mean_fixed = sum(later) / len(later)
+        floor_fresh = min(measured)
+        print(f"  New vectors: {mean_fresh:.1%} mean, {floor_fresh:.1%} worst, over "
+              f"{len(measured)} generations.")
+        print(f"  Fixed set:   {mean_fixed:.1%} mean over the same rounds.")
+        # An average gap understates this when the new-vector series sits at the ceiling,
+        # so the comparison that matters is the worst case for new vectors against the
+        # best case for the fixed set.
+        if floor_fresh >= max(later):
+            print("  Fresh mutations were caught at least as reliably as the original set")
+            print("  in EVERY generation. Directed mutation inside a fixed grammar")
+            print("  produces variants, not novelty: it moves parameters and recombines")
+            print("  primitives the grammar already has, and never invents a new")
+            print("  extraction rail, which is where the boundary was found.")
+        elif mean_fresh < mean_fixed - 0.05:
             print("  The attacker is finding gaps faster than the detector closes them.")
-        elif gap > 0.05:
-            print("  Fresh mutations are EASIER to catch than the original set.")
         else:
-            print("  No measurable difference between fresh mutations and the original set.")
+            print("  No consistent difference between fresh mutations and the original set.")
 
     manifest = {
         "contract_version": "0.1.0",
@@ -213,6 +224,7 @@ def main(argv: list[str] | None = None) -> int:
         "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "seed": seed,
         "config_hash": config_hash(),
+        "source_digest": source_digest(),
         "code_version": None,
         "prevalence": generations[0]["metrics_seen"]["prevalence"],
         "is_fixture": False,

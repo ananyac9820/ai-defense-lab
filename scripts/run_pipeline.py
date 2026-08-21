@@ -31,7 +31,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from adl.common.config import config_hash, load_config
+from adl.common.config import config_hash, load_config, source_digest
 from adl.common.contracts import coverage_report, validate
 from adl.common.paths import ARTIFACTS_DIR, FIXTURES_DIR
 from adl.defend.features import (
@@ -471,6 +471,7 @@ def main(argv: list[str] | None = None) -> int:
         "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "seed": seed,
         "config_hash": config_hash(),
+        "source_digest": source_digest(),
         "code_version": _git_sha(),
         "prevalence": round(float(ledger.meta["prevalence_actual"]), 6),
         "is_fixture": False,
