@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/components/draw.tsx","./src/components/plate.tsx","./src/components/ui.tsx","./src/lib/contracts.ts","./src/lib/data.ts","./src/lib/store.ts","./src/pages/legal.tsx","./src/sections/sections.tsx"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/draw.tsx","./src/components/plate.tsx","./src/components/ui.tsx","./src/lib/contracts.ts","./src/lib/data.ts","./src/lib/store.ts","./src/pages/legal.tsx","./src/sections/sections.tsx","./src/three/loophelix3d.tsx"],"version":"5.9.3"}

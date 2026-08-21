@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Figure, Hatch, Leader, Placeholder, Plate, SectionMark, Skeleton } from '../components/plate';
 import { BarPlot, ContributionPlot, LinePlot } from '../components/draw';
 import { formatInr, lift, pct } from '../lib/data';
@@ -506,11 +506,55 @@ export function Surface() {
   );
 }
 
+/**
+ * The 3D helix is lazy-loaded and only ever additive. The 2D curve below it stays, and
+ * is the whole view under reduced motion or on a machine without a usable GPU. That is
+ * the venue fallback, and it is why the 2D path was built first.
+ */
+const LoopHelix3D = lazy(() => import('../three/LoopHelix3D'));
+
+/**
+ * Mount the 3D scene only once its section is near the viewport.
+ *
+ * three.js is 238KB gzipped. Loading it during the initial paint would spend the entire
+ * three-second budget on a scene that is several screens down the page, so the chunk is
+ * not fetched until the reader is nearly there.
+ */
+function useNearViewport<T extends HTMLElement>(margin = '600px') {
+  const ref = useRef<T>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || near) return;
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach((e) => e.isIntersecting && setNear(true)),
+      { rootMargin: margin }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [near, margin]);
+  return [ref, near] as const;
+}
+
+function usePrefersReducedMotion(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      mq.addEventListener('change', cb);
+      return () => mq.removeEventListener('change', cb);
+    },
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    () => false
+  );
+}
+
 /* ------------------------------------------------------------------ 05 THE LOOP */
 
 export function Helix() {
   const { bundle, perspective, generation, setGeneration } = useStore();
   const attacker = perspective === 'attacker';
+  const reduced = usePrefersReducedMotion();
+  const [helixRef, helixNear] = useNearViewport<HTMLDivElement>();
   if (!bundle) return <Skeleton rows={5} label="reading the run manifest" />;
 
   const { manifest, misses } = bundle;
@@ -541,9 +585,29 @@ export function Helix() {
         </h2>
       </div>
 
+      <div className="mt-8" ref={helixRef} style={{ minHeight: 460 }}>
+        {helixNear ? (
+          <Suspense
+            fallback={
+              <div className="tag grid h-[460px] place-items-center">loading the helix</div>
+            }
+          >
+            <LoopHelix3D
+              generations={gens}
+              misses={misses}
+              selected={current.generation}
+              attacker={attacker}
+              reduced={reduced}
+            />
+          </Suspense>
+        ) : (
+          <div className="tag grid h-[460px] place-items-center">helix loads on approach</div>
+        )}
+      </div>
+
       <div className="mt-10 grid gap-10 lg:grid-cols-[1.4fr_1fr]">
         <div>
-          <div className="tag mb-2">detection rate per generation</div>
+          <div className="tag mb-2">detection rate per generation, flat view</div>
           <LinePlot
             xLabels={gens.map((g) => `G${g.generation}`)}
             series={[
