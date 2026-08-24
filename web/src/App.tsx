@@ -88,21 +88,21 @@ function Inversion() {
       className="hit mono flex items-stretch border border-[var(--fg)] text-[11px] uppercase tracking-[0.1em]"
       aria-label={`Switch to ${attacker ? 'defender' : 'attacker'} view`}
     >
+      {/*
+        A bordered chip rather than a filled one. Light text on a vermilion fill measures
+        4.65:1 at 11px, which fails the bar, and darkening the fill enough to pass would
+        have meant a maroon that reads as a different colour. Spot-coloured text on the
+        ground clears 7:1 and matches the badge language used elsewhere on the page.
+      */}
       <span
-        className="px-2.5 py-1.5"
-        style={{
-          background: attacker ? 'transparent' : 'var(--defend)',
-          color: attacker ? 'var(--fg-3)' : 'var(--on-spot)',
-        }}
+        className="border-r border-[var(--fg)] px-2.5 py-1.5"
+        style={{ color: attacker ? 'var(--fg-3)' : 'var(--spot-sm)' }}
       >
         Defender
       </span>
       <span
-        className="border-l border-[var(--fg)] px-2.5 py-1.5"
-        style={{
-          background: attacker ? 'var(--attack)' : 'transparent',
-          color: attacker ? 'var(--on-spot)' : 'var(--fg-3)',
-        }}
+        className="px-2.5 py-1.5"
+        style={{ color: attacker ? 'var(--spot-sm)' : 'var(--fg-3)' }}
       >
         Attacker
       </span>

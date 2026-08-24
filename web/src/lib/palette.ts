@@ -1,39 +1,45 @@
 /**
  * The palette, in one place.
  *
- * CSS owns theming everywhere it can, but WebGL materials cannot read a custom
- * property, so the three.js scenes need real hex. Rather than let those drift, both the
- * CSS variables and the scenes read the values from here.
- */
-
-export const GROUND_BASE = '#0d1f17';
-export const GROUND_RAISE = '#142c20';
-export const BONE = '#e8ede6';
-
-/** Hairline ink on the green ground, matched to --rule at the raised band. */
-export const LINE = '#7d8c82';
-
-/**
- * Defence reads 9.2:1 on the raised ground and needed no change. Attack could not stay
- * at #c43d18: it measures 2.86:1 there and is unreadable. Lightened to keep the hue and
- * clear the bar, with a paler value for anything small enough to be audited at 7:1.
- */
-export const DEFEND = '#17e88f';
-
-/**
- * Attack needs two values here, and the audit is why.
+ * CSS owns theming everywhere it can, but WebGL materials cannot read a custom property,
+ * so the three.js scenes need real hex. Rather than let those drift, both the CSS
+ * variables and the scenes read their values from here.
  *
- * #c43d18 measures 2.86:1 on the raised ground and is unreadable. #ff7a4d fixes the
- * graphics but still lands at 6.6:1 as 11px text and 6.6:1 for dark text sitting on it,
- * both short of the 7:1 bar. So the fill is #ff8a5c, which clears 7.4:1 for the label
- * inside it, and small text on the ground uses #ffa07a at 7.5:1.
- *
- * Signal green needed no such split: it reads 9.2:1 either way.
+ * Two grounds, paper and ink, and every accent needs a value for each: a colour that
+ * reads on paper disappears on ink and the reverse. Small text needs a different value
+ * again, because 11px has to clear 7:1 where a 55px figure does not.
  */
-export const ATTACK = '#ff8a5c';
-export const ATTACK_SMALL = '#ffa07a';
-export const WARN = '#ffa07a';
 
-export const spotFor = (attacker: boolean): string => (attacker ? ATTACK : DEFEND);
-export const spotSmallFor = (attacker: boolean): string =>
-  attacker ? ATTACK_SMALL : DEFEND;
+export const PAPER = '#f3f2ee';
+export const INK = '#0e0e0c';
+
+/** Hairline colour for the WebGL scenes, which sit on the paper band. */
+export const LINE = '#14140f';
+
+/*
+  Accents, solved against the ground they sit on.
+
+    on paper (#f3f2ee)          on ink (#0e0e0c)
+      defence  #0f5c4a            #4bbf95
+      attack   #c43d18            #ff7a4d
+
+  Vermilion measures 4.65:1 on paper, which is fine behind a 55px figure and not fine for
+  an 11px label, so small text takes a darker #94290c on paper and a lighter #ff9a72 on
+  ink. Only the value moves; the hue does not.
+*/
+export const DEFEND_PAPER = '#0f5c4a';
+export const DEFEND_INK = '#4bbf95';
+export const ATTACK_PAPER = '#c43d18';
+export const ATTACK_INK = '#ff7a4d';
+
+export const DEFEND_SM_PAPER = '#0f5c4a';
+export const DEFEND_SM_INK = '#4bbf95';
+export const ATTACK_SM_PAPER = '#94290c';
+export const ATTACK_SM_INK = '#ff9a72';
+
+export const WARN_PAPER = '#94290c';
+export const WARN_INK = '#ff9a72';
+
+/** The 3D scenes render on the paper band, so they take the paper values. */
+export const spotFor = (attacker: boolean): string =>
+  attacker ? ATTACK_PAPER : DEFEND_PAPER;

@@ -958,3 +958,39 @@ Both perspectives, 541 text nodes each:
 The audit itself gained a fix: it was walking every element including `<head>`, so the
 document `<title>` was being scored as 1.23:1 body text. A false positive, now skipped.
 The title also contained the only remaining em dash on the page, which is gone.
+
+---
+
+# D-042 — Ground reverted to paper and ink (21 Aug 2026)
+
+Back to #f3f2ee and #0e0e0c. Done as a token change rather than a git revert, so three
+things from the green pass were kept:
+
+- `lib/palette.ts` as the single source the CSS variables and the WebGL scenes both read
+  from, which is what stops the two drifting;
+- the `--spot-sm` split, which the paper ground needs just as much as the green one did;
+- `band-base` and `band-raise` as names, since `band-paper` and `band-ink` describe a
+  ground that may change again.
+
+Also deleted `components/ui.tsx`, which nothing had imported since the dossier rebuild.
+
+## The --spot-sm split matters on paper too
+
+Vermilion measures 4.65:1 on paper. Fine behind a 55px figure, not fine for an 11px
+label, so small text uses #94290c at 7.1:1 and the large accents stay at #c43d18. This
+is the same problem the green ground had, and it was present on paper the whole time -
+it was simply never caught, because the earlier audits only ran in defender view.
+
+**Auditing one perspective is auditing half the page.** Both are checked now.
+
+## The inversion toggle became a bordered chip
+
+The filled chip put paper text on a vermilion fill at 4.65:1 at 11px. Darkening the fill
+enough to clear 7:1 needed a maroon that read as a different colour, so the chip is
+bordered with spot-coloured text on the ground instead: 7.1:1, and it matches the badge
+language already used for placeholders and the fixture mark.
+
+## Audits
+
+Both perspectives, 541 text nodes each: 0 contrast failures under 12px, smallest text
+11px, nothing below 4.5:1 at any size. Design list: 0 violations, 0 emoji, 0 em dashes.

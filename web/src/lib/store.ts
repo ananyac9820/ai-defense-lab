@@ -1,6 +1,17 @@
 import { create } from 'zustand';
 import { loadBundle, type Bundle } from './data';
-import { ATTACK, DEFEND, WARN, spotFor, spotSmallFor } from './palette';
+import {
+  ATTACK_INK,
+  ATTACK_PAPER,
+  ATTACK_SM_INK,
+  ATTACK_SM_PAPER,
+  DEFEND_INK,
+  DEFEND_PAPER,
+  DEFEND_SM_INK,
+  DEFEND_SM_PAPER,
+  WARN_INK,
+  WARN_PAPER,
+} from './palette';
 
 /**
  * One world, two perspectives.
@@ -72,14 +83,16 @@ export const useStore = create<State>((set, get) => ({
  */
 export function applyPerspective(p: Perspective): void {
   const root = document.documentElement;
-  // One spot colour for the whole page, swapped by the inversion. On a green ground the
-  // vermilion carries far more force than it did on paper, which is the point of the
-  // change: the attacker side should feel like a different room.
-  root.style.setProperty('--spot-live', spotFor(p === 'attacker'));
-  // Small text on the ground needs a lighter value than a fill does.
-  root.style.setProperty('--spot-sm-live', spotSmallFor(p === 'attacker'));
-  root.style.setProperty('--defend', DEFEND);
-  root.style.setProperty('--attack', ATTACK);
-  root.style.setProperty('--warn-live', WARN);
+  const attacker = p === 'attacker';
+
+  // Every accent carries a paper value and an ink value, and small text carries a third
+  // because 11px has to clear 7:1 where a 55px figure does not. Bands pick whichever
+  // suits their ground, so the inversion is still one state change.
+  root.style.setProperty('--spot-paper', attacker ? ATTACK_PAPER : DEFEND_PAPER);
+  root.style.setProperty('--spot-ink', attacker ? ATTACK_INK : DEFEND_INK);
+  root.style.setProperty('--spot-sm-paper', attacker ? ATTACK_SM_PAPER : DEFEND_SM_PAPER);
+  root.style.setProperty('--spot-sm-ink', attacker ? ATTACK_SM_INK : DEFEND_SM_INK);
+  root.style.setProperty('--warn-paper', WARN_PAPER);
+  root.style.setProperty('--warn-ink', WARN_INK);
   root.dataset.perspective = p;
 }
